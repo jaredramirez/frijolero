@@ -126,7 +126,6 @@ pub fn player_movement(
         let just_pressed_jump = action.just_pressed(&PlatformerAction::Jump);
 
         if just_pressed_jump {
-            println!("jumping {} {:?}", jumper.jumping, *movement_state);
             if !jumper.jumping && (ground_detection.on_ground || climber.climbing) {
                 // If the playing is moving horizontally, then make their jump
                 // slighlty less powerful
@@ -138,11 +137,15 @@ pub fn player_movement(
                 jumper.jumping = true;
                 climber.climbing = false;
                 next_movement_state = MovementState::Jumping;
+            } else if jumper.jumping && !jumper.double_jumping && !climber.climbing {
+                jumper.double_jumping = true;
+                velocity.linvel.y += 200.;
             }
         }
 
-        if !just_pressed_jump && ground_detection.on_ground {
+        if !just_pressed_jump && velocity.linvel.y == 0. && ground_detection.on_ground {
             jumper.jumping = false;
+            jumper.double_jumping = false;
         }
 
         // set state
@@ -225,7 +228,6 @@ fn set_sprite_animation(
     >,
 ) {
     for (ent, movement_state, mut opt_animation) in query.iter_mut() {
-        println!("movement_state {:?}", movement_state);
         if let Some(mut ent_cmds) = commands.get_entity(ent) {
             let next_animation = get_anmation_for_movement_state(&movement_state);
             if let Some(animation) = &mut opt_animation {
