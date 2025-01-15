@@ -1627,7 +1627,7 @@
 			"maxCount": 0,
 			"limitScope": "PerLevel",
 			"limitBehavior": "MoveLastOne",
-			"pivotX": 0.5,
+			"pivotX": 0,
 			"pivotY": 0.5,
 			"fieldDefs": [
 				{
@@ -1776,6 +1776,25 @@
 							"fieldInstances": [{ "__identifier": "items", "__type": "Array<LocalEnum.Item>", "__value": [], "__tile": null, "defUid": 92, "realEditorValues": [] }],
 							"__worldX": 56,
 							"__worldY": 176
+						},
+						{
+							"__identifier": "Platform",
+							"__grid": [10,12],
+							"__pivot": [0,0.5],
+							"__tags": [],
+							"__tile": { "tilesetUid": 7, "x": 144, "y": 0, "w": 16, "h": 16 },
+							"__smartColor": "#EAD4AA",
+							"iid": "21d588b0-c210-11ef-832c-4b94b5ec19bb",
+							"width": 32,
+							"height": 16,
+							"defUid": 123,
+							"px": [168,200],
+							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 13, "cy": 12 }], "__tile": null, "defUid": 124, "realEditorValues": [{
+								"id": "V_String",
+								"params": ["13,12"]
+							}] }],
+							"__worldX": 168,
+							"__worldY": 200
 						}
 					]
 				},
@@ -2220,28 +2239,9 @@
 					"gridTiles": [],
 					"entityInstances": [
 						{
-							"__identifier": "Obstacle",
-							"__grid": [2,12],
-							"__pivot": [0.5,1],
-							"__tags": [],
-							"__tile": { "tilesetUid": 118, "x": 192, "y": 0, "w": 16, "h": 16 },
-							"__smartColor": "#BE4A2F",
-							"iid": "48352d80-c210-11ef-b200-2f99d74efbe0",
-							"width": 16,
-							"height": 16,
-							"defUid": 21,
-							"px": [40,208],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 4, "cy": 12 }], "__tile": null, "defUid": 96, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["4,12"]
-							}] }],
-							"__worldX": -232,
-							"__worldY": -112
-						},
-						{
 							"__identifier": "Platform",
 							"__grid": [7,12],
-							"__pivot": [0.5,0.5],
+							"__pivot": [0,0.5],
 							"__tags": [],
 							"__tile": { "tilesetUid": 7, "x": 144, "y": 0, "w": 16, "h": 16 },
 							"__smartColor": "#EAD4AA",
@@ -2256,6 +2256,25 @@
 							}] }],
 							"__worldX": -152,
 							"__worldY": -120
+						},
+						{
+							"__identifier": "Obstacle",
+							"__grid": [4,20],
+							"__pivot": [0.5,1],
+							"__tags": [],
+							"__tile": { "tilesetUid": 118, "x": 192, "y": 0, "w": 16, "h": 16 },
+							"__smartColor": "#BE4A2F",
+							"iid": "83a71ba0-c210-11ef-832c-31f5061a941c",
+							"width": 16,
+							"height": 16,
+							"defUid": 21,
+							"px": [72,336],
+							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 7, "cy": 20 }], "__tile": null, "defUid": 96, "realEditorValues": [{
+								"id": "V_String",
+								"params": ["7,20"]
+							}] }],
+							"__worldX": -200,
+							"__worldY": 16
 						}
 					]
 				},

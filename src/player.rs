@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{ops::DerefMut, time::Duration};
 
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
@@ -6,8 +6,13 @@ use bevy_rapier2d::dynamics::Velocity;
 use leafwing_input_manager::prelude::*;
 
 use crate::{
-    actions::PlatformerAction, climbing::Climber, colliders::ColliderBundle,
-    ground_detection::GroundDetection, inventory::Inventory, jumping::Jumper,
+    actions::PlatformerAction,
+    climbing::Climber,
+    colliders::ColliderBundle,
+    ground_detection::{GroundDetection, Grounded},
+    inventory::Inventory,
+    jumping::Jumper,
+    platform::Platform,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
@@ -26,6 +31,7 @@ pub struct PlayerBundle {
     pub climber: Climber,
     pub jumper: Jumper,
     pub ground_detection: GroundDetection,
+    pub coyote_timer: CoyoteTimer,
 
     // Build Items Component manually by using `impl From<&EntityInstance>`
     #[from_entity_instance]
@@ -63,6 +69,7 @@ impl Default for MovementState {
 
 // Player jump 2 block vertically, and jump 4 horizontally but just barely.
 pub fn player_movement(
+    platforms_query: Query<(Entity, &Velocity), (With<Platform>, Without<Player>)>,
     mut query: Query<
         (
             &ActionState<PlatformerAction>,
@@ -70,14 +77,40 @@ pub fn player_movement(
             &mut Velocity,
             &mut Climber,
             &mut Jumper,
+            &mut CoyoteTimer,
             &GroundDetection,
         ),
-        With<Player>,
+        (With<Player>, Without<Platform>),
     >,
 ) {
-    for (action, mut movement_state, mut velocity, mut climber, mut jumper, ground_detection) in
-        &mut query
+    for (
+        action,
+        mut movement_state,
+        mut velocity,
+        mut climber,
+        mut jumper,
+        mut coyote_timer,
+        ground_detection,
+    ) in &mut query
     {
+        let on_ground = ground_detection.on_ground();
+
+        // if on a platform, get the platform's velocity
+        let (base_x_vel, base_y_vel) = match &ground_detection.grounded {
+            Grounded::OnGround(ground_ent, ground_attrs) => {
+                let mut x_vel = 0.;
+                let mut y_vel = 0.;
+                if ground_attrs.is_platform {
+                    if let Ok((_, platform_vel)) = platforms_query.get(*ground_ent) {
+                        x_vel = platform_vel.linvel.x;
+                        y_vel = platform_vel.linvel.y;
+                    }
+                }
+                (x_vel, y_vel)
+            }
+            Grounded::NotOnGround => (0., 0.),
+        };
+
         let mut next_movement_state = movement_state.clone();
 
         // handle running
@@ -85,13 +118,13 @@ pub fn player_movement(
         let pressed_right = action.pressed(&PlatformerAction::Right);
         let pressed_left = action.pressed(&PlatformerAction::Left);
         if pressed_right && !pressed_left {
-            velocity.linvel.x = 150.;
+            velocity.linvel.x = base_x_vel + 150.;
             next_movement_state = MovementState::Running(RunningDirection::Right);
         } else if pressed_left && !pressed_right {
-            velocity.linvel.x = -150.;
+            velocity.linvel.x = base_x_vel + -150.;
             next_movement_state = MovementState::Running(RunningDirection::Left);
         } else {
-            velocity.linvel.x = 0.;
+            velocity.linvel.x = base_x_vel;
         }
 
         // handle climbing
@@ -122,30 +155,40 @@ pub fn player_movement(
         }
 
         // handle jumping
-
         let just_pressed_jump = action.just_pressed(&PlatformerAction::Jump);
-
         if just_pressed_jump {
-            if !jumper.jumping && (ground_detection.on_ground || climber.climbing) {
-                // If the playing is moving horizontally, then make their jump
-                // slighlty less powerful
-                if velocity.linvel.x == 0. {
-                    velocity.linvel.y = 400.;
-                } else {
-                    velocity.linvel.y = 390.;
+            let is_coyote_timer_stopped = coyote_timer.0.finished() || coyote_timer.0.paused();
+            match jumper.deref_mut() {
+                Jumper::NotJumping => {
+                    if on_ground || climber.climbing || !is_coyote_timer_stopped {
+                        coyote_timer.0.pause();
+                        if velocity.linvel.x == base_x_vel {
+                            velocity.linvel.y = base_y_vel + 400.;
+                        } else {
+                            velocity.linvel.y = base_y_vel + 390.;
+                        }
+                        *jumper = Jumper::mk_jumping();
+                        climber.climbing = false;
+                        next_movement_state = MovementState::Jumping;
+                    }
                 }
-                jumper.jumping = true;
-                climber.climbing = false;
-                next_movement_state = MovementState::Jumping;
-            } else if jumper.jumping && !jumper.double_jumping && !climber.climbing {
-                jumper.double_jumping = true;
-                velocity.linvel.y += 200.;
+                Jumper::Jumping(ref mut jumping) => {
+                    if !jumping.double_jumping && !climber.climbing {
+                        jumping.double_jumping = true;
+                        velocity.linvel.y = base_y_vel + 400.;
+                    }
+                }
             }
         }
 
-        if !just_pressed_jump && velocity.linvel.y == 0. && ground_detection.on_ground {
-            jumper.jumping = false;
-            jumper.double_jumping = false;
+        if !just_pressed_jump && velocity.linvel.y == base_y_vel && on_ground {
+            *jumper = Jumper::mk_not_jumping();
+        }
+
+        if !on_ground && ground_detection.was_on_ground && !jumper.is_jumping() {
+            println!("set coyote");
+            coyote_timer.0.reset();
+            coyote_timer.0.unpause();
         }
 
         // set state
@@ -154,8 +197,10 @@ pub fn player_movement(
         } else if !pressed_left
             && !pressed_left
             && !just_pressed_jump
-            && velocity.linvel.y == 0.
-            && velocity.linvel.x == 0.
+            && !climber.climbing
+            && !jumper.is_jumping()
+            && velocity.linvel.x == base_x_vel
+            && velocity.linvel.y == base_y_vel
             && *movement_state != MovementState::Idling
         {
             *movement_state = MovementState::Idling;
@@ -244,7 +289,7 @@ fn get_anmation_for_movement_state(state: &MovementState) -> AnimationConfig {
         MovementState::Idling | MovementState::Climbing(_) => {
             AnimationConfig::new(0, vec![1, 2, 3, 4], 5, 3, TimerMode::Repeating, *state)
         }
-        MovementState::Jumping => AnimationConfig::new(4, vec![], 4, 15, TimerMode::Once, *state),
+        MovementState::Jumping => AnimationConfig::new(4, vec![], 4, 10, TimerMode::Once, *state),
         MovementState::Running(_) => {
             AnimationConfig::new(1, vec![2], 3, 15, TimerMode::Repeating, *state)
         }
@@ -288,6 +333,25 @@ fn set_sprite_direction(
     }
 }
 
+// COYOTE TIMER
+
+#[derive(Component, Clone)]
+pub struct CoyoteTimer(Timer);
+
+impl Default for CoyoteTimer {
+    fn default() -> Self {
+        let mut coyote_timer = Timer::new(Duration::from_secs_f32(0.2), TimerMode::Once);
+        coyote_timer.pause();
+        Self(coyote_timer)
+    }
+}
+
+fn tick_timers(time: Res<Time>, mut query: Query<&mut CoyoteTimer>) {
+    for mut coyote in query.iter_mut() {
+        coyote.0.tick(time.delta());
+    }
+}
+
 // PLUGIN
 
 pub struct PlayerPlugin;
@@ -295,11 +359,10 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.register_ldtk_entity::<PlayerBundle>("Player")
+            .add_systems(Update, (setup_player_actions, player_movement, tick_timers))
             .add_systems(
                 Update,
                 (
-                    setup_player_actions,
-                    player_movement,
                     set_sprite_animation,
                     set_sprite_direction.after(set_sprite_animation),
                     animate_sprite,

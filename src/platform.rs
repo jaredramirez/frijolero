@@ -5,15 +5,16 @@ use bevy_rapier2d::dynamics::Velocity;
 use crate::colliders::ColliderBundle;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
-pub struct Obstacle;
+pub struct Platform;
 
 #[derive(Clone, Default, Bundle, LdtkEntity)]
-pub struct ObstacleBundle {
+pub struct PlatformBundle {
     #[sprite_sheet]
     pub sprite_sheet: Sprite,
     #[from_entity_instance]
     pub collider_bundle: ColliderBundle,
-    pub enemy: Obstacle,
+    pub platform: Platform,
+    pub global_transform: GlobalTransform,
     #[ldtk_entity]
     pub patrol: Patrol,
 }
@@ -35,6 +36,15 @@ impl LdtkEntity for Patrol {
         _: &mut Assets<TextureAtlasLayout>,
     ) -> Patrol {
         let mut points = Vec::new();
+        println!(
+            "POINT: {}",
+            ldtk_pixel_coords_to_translation_pivoted(
+                entity_instance.px,
+                layer_instance.c_hei * layer_instance.grid_size,
+                IVec2::new(entity_instance.width, entity_instance.height),
+                entity_instance.pivot,
+            )
+        );
         points.push(ldtk_pixel_coords_to_translation_pivoted(
             entity_instance.px,
             layer_instance.c_hei * layer_instance.grid_size,
@@ -71,7 +81,7 @@ impl LdtkEntity for Patrol {
     }
 }
 
-pub fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol), With<Obstacle>>) {
+pub fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol), With<Platform>>) {
     for (mut transform, mut velocity, mut patrol) in &mut query {
         if patrol.points.len() <= 1 {
             continue;
@@ -104,11 +114,11 @@ pub fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol), Wit
     }
 }
 
-pub struct ObstaclePlugin;
+pub struct PlatformPlugin;
 
-impl Plugin for ObstaclePlugin {
+impl Plugin for PlatformPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, patrol)
-            .register_ldtk_entity::<ObstacleBundle>("Obstacle");
+            .register_ldtk_entity::<PlatformBundle>("Platform");
     }
 }

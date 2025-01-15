@@ -71,7 +71,7 @@ impl LdtkEntity for Patrol {
     }
 }
 
-pub fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol)>) {
+pub fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol), With<Enemy>>) {
     for (mut transform, mut velocity, mut patrol) in &mut query {
         if patrol.points.len() <= 1 {
             continue;

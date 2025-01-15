@@ -40,6 +40,13 @@ impl From<&EntityInstance> for ColliderBundle {
                 rotation_constraints,
                 ..Default::default()
             },
+            "Platform" => ColliderBundle {
+                collider: Collider::cuboid(8., 8.),
+                rigid_body: RigidBody::KinematicVelocityBased,
+                friction: Friction::new(1.0),
+                rotation_constraints,
+                ..Default::default()
+            },
             _ => ColliderBundle::default(),
         }
     }
