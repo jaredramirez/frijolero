@@ -32,6 +32,7 @@ pub struct PlayerBundle {
     pub jumper: Jumper,
     pub ground_detection: GroundDetection,
     pub coyote_timer: CoyoteTimer,
+    pub jump_buffer_timer: JumpBufferTimer,
 
     // Build Items Component manually by using `impl From<&EntityInstance>`
     #[from_entity_instance]
@@ -67,6 +68,8 @@ impl Default for MovementState {
     }
 }
 
+const JUMP_VELOCITY: f32 = 450.;
+
 // Player jump 2 block vertically, and jump 4 horizontally but just barely.
 pub fn player_movement(
     platforms_query: Query<(Entity, &Velocity), (With<Platform>, Without<Player>)>,
@@ -78,6 +81,7 @@ pub fn player_movement(
             &mut Climber,
             &mut Jumper,
             &mut CoyoteTimer,
+            &mut JumpBufferTimer,
             &GroundDetection,
         ),
         (With<Player>, Without<Platform>),
@@ -90,6 +94,7 @@ pub fn player_movement(
         mut climber,
         mut jumper,
         mut coyote_timer,
+        mut jump_buffer_timer,
         ground_detection,
     ) in &mut query
     {
@@ -154,18 +159,23 @@ pub fn player_movement(
             }
         }
 
+        if on_ground && !jump_buffer_timer.0.is_stopped() {
+            jump_buffer_timer.0.pause();
+            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
+            *jumper = Jumper::mk_jumping();
+        }
+
         // handle jumping
         let just_pressed_jump = action.just_pressed(&PlatformerAction::Jump);
         if just_pressed_jump {
-            let is_coyote_timer_stopped = coyote_timer.0.finished() || coyote_timer.0.paused();
             match jumper.deref_mut() {
                 Jumper::NotJumping => {
-                    if on_ground || climber.climbing || !is_coyote_timer_stopped {
+                    if on_ground || climber.climbing || !coyote_timer.0.is_stopped() {
                         coyote_timer.0.pause();
                         if velocity.linvel.x == base_x_vel {
-                            velocity.linvel.y = base_y_vel + 400.;
+                            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
                         } else {
-                            velocity.linvel.y = base_y_vel + 390.;
+                            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
                         }
                         *jumper = Jumper::mk_jumping();
                         climber.climbing = false;
@@ -173,9 +183,13 @@ pub fn player_movement(
                     }
                 }
                 Jumper::Jumping(ref mut jumping) => {
-                    if !jumping.double_jumping && !climber.climbing {
-                        jumping.double_jumping = true;
-                        velocity.linvel.y = base_y_vel + 400.;
+                    if !climber.climbing {
+                        if !jumping.double_jumping {
+                            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
+                            jumping.double_jumping = true;
+                        } else {
+                            jump_buffer_timer.0.restart();
+                        }
                     }
                 }
             }
@@ -186,9 +200,7 @@ pub fn player_movement(
         }
 
         if !on_ground && ground_detection.was_on_ground && !jumper.is_jumping() {
-            println!("set coyote");
-            coyote_timer.0.reset();
-            coyote_timer.0.unpause();
+            coyote_timer.0.restart();
         }
 
         // set state
@@ -335,20 +347,46 @@ fn set_sprite_direction(
 
 // COYOTE TIMER
 
+pub trait TimerHelper {
+    fn restart(&mut self);
+    fn is_stopped(&mut self) -> bool;
+}
+impl TimerHelper for Timer {
+    fn restart(&mut self) {
+        self.reset();
+        self.unpause();
+    }
+    fn is_stopped(&mut self) -> bool {
+        return self.paused() || self.finished();
+    }
+}
+
 #[derive(Component, Clone)]
 pub struct CoyoteTimer(Timer);
 
 impl Default for CoyoteTimer {
     fn default() -> Self {
-        let mut coyote_timer = Timer::new(Duration::from_secs_f32(0.2), TimerMode::Once);
+        let mut coyote_timer = Timer::new(Duration::from_secs_f32(0.1), TimerMode::Once);
         coyote_timer.pause();
         Self(coyote_timer)
     }
 }
 
-fn tick_timers(time: Res<Time>, mut query: Query<&mut CoyoteTimer>) {
-    for mut coyote in query.iter_mut() {
+#[derive(Component, Clone)]
+pub struct JumpBufferTimer(Timer);
+
+impl Default for JumpBufferTimer {
+    fn default() -> Self {
+        let mut jump_buffer_timer = Timer::new(Duration::from_secs_f32(0.1), TimerMode::Once);
+        jump_buffer_timer.pause();
+        Self(jump_buffer_timer)
+    }
+}
+
+fn tick_timers(time: Res<Time>, mut query: Query<(&mut CoyoteTimer, &mut JumpBufferTimer)>) {
+    for (mut coyote, mut jump_buffer) in query.iter_mut() {
         coyote.0.tick(time.delta());
+        jump_buffer.0.tick(time.delta());
     }
 }
 
