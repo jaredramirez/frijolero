@@ -184,10 +184,11 @@ pub fn player_movement(
                 }
                 Jumper::Jumping(ref mut jumping) => {
                     if !climber.climbing {
-                        if !jumping.double_jumping {
+                        if jumping.jumps_left > 0 {
                             velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
-                            jumping.double_jumping = true;
+                            jumping.jumps_left -= 1;
                         } else {
+                            println!("Set Jump Buffer");
                             jump_buffer_timer.0.restart();
                         }
                     }
@@ -199,7 +200,9 @@ pub fn player_movement(
             *jumper = Jumper::mk_not_jumping();
         }
 
+        println!("{} {}", on_ground, ground_detection.was_on_ground);
         if !on_ground && ground_detection.was_on_ground && !jumper.is_jumping() {
+            println!("Set Coyote Jump");
             coyote_timer.0.restart();
         }
 

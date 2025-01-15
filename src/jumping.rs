@@ -6,7 +6,6 @@ pub enum Jumper {
     NotJumping,
     Jumping(Jumping),
 }
-
 impl Jumper {
     pub fn is_jumping(&self) -> bool {
         match self {
@@ -16,9 +15,7 @@ impl Jumper {
     }
 
     pub fn mk_jumping() -> Self {
-        Jumper::Jumping(Jumping {
-            double_jumping: false,
-        })
+        Jumper::Jumping(Jumping { jumps_left: 0 })
     }
     pub fn mk_not_jumping() -> Self {
         Jumper::NotJumping
@@ -27,5 +24,5 @@ impl Jumper {
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct Jumping {
-    pub double_jumping: bool,
+    pub jumps_left: i8,
 }
