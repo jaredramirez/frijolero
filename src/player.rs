@@ -10,15 +10,17 @@ use crate::{
     actions::PlatformerAction,
     climbing::Climber,
     colliders::ColliderBundle,
-    ground_detection::{CoyoteTimer2, GroundDetection, Grounded},
+    ground_detection::{CoyoteTimer, GroundDetection},
     inventory::Inventory,
     jumping::Jumper,
     platform::Platform,
 };
 
+/// tag for players
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct Player;
 
+/// player bundle, containing everything needed
 #[derive(Clone, Default, Bundle, LdtkEntity)]
 pub struct PlayerBundle {
     #[sprite_sheet("player.png", 16, 16, 7, 1, 0, 0, 0)]
@@ -32,7 +34,7 @@ pub struct PlayerBundle {
     pub climber: Climber,
     pub jumper: Jumper,
     pub ground_detection: GroundDetection,
-    pub coyote_timer: CoyoteTimer2,
+    pub coyote_timer: CoyoteTimer,
     pub jump_buffer_timer: JumpBufferTimer,
 
     // Build Items Component manually by using `impl From<&EntityInstance>`
@@ -46,6 +48,7 @@ pub struct PlayerBundle {
 
 // MOVEMENT
 
+/// current state of the user
 #[derive(Component, PartialEq, Debug, Copy, Clone)]
 pub enum MovementState {
     Idling,
@@ -69,9 +72,13 @@ impl Default for MovementState {
     }
 }
 
-const JUMP_VELOCITY: f32 = 450.;
+// movement constants
 
-// Player jump 2 block vertically, and jump 4 horizontally but just barely.
+const JUMP_VELOCITY: f32 = 400.;
+const RUN_VELOCITY: f32 = 150.;
+const CLIMB_VELOCITY: f32 = 150.;
+
+/// configure player movement
 pub fn player_movement(
     platforms_query: Query<(Entity, &Velocity), (With<Platform>, Without<Player>)>,
     mut query: Query<
@@ -81,7 +88,7 @@ pub fn player_movement(
             &mut Velocity,
             &mut Climber,
             &mut Jumper,
-            &mut CoyoteTimer2,
+            &mut CoyoteTimer,
             &mut JumpBufferTimer,
             &GroundDetection,
         ),
@@ -102,32 +109,34 @@ pub fn player_movement(
         let on_ground = ground_detection.on_ground();
 
         // if on a platform, get the platform's velocity
-        let (base_x_vel, base_y_vel) = match &ground_detection.grounded {
-            Grounded::OnGround(ground_ent, ground_attrs) => {
+        // this is the base velocity on top of any user input movement velocity
+        let (base_x_vel, base_y_vel) = match &ground_detection {
+            GroundDetection::OnGround(ground_ent) => {
                 let mut x_vel = 0.;
                 let mut y_vel = 0.;
-                if ground_attrs.is_platform {
-                    if let Ok((_, platform_vel)) = platforms_query.get(*ground_ent) {
-                        x_vel = platform_vel.linvel.x;
-                        y_vel = platform_vel.linvel.y;
-                    }
+                if let Ok((_, platform_vel)) = platforms_query.get(*ground_ent) {
+                    x_vel = platform_vel.linvel.x;
+                    y_vel = platform_vel.linvel.y;
                 }
                 (x_vel, y_vel)
             }
-            Grounded::NotOnGround => (0., 0.),
+            GroundDetection::NotOnGround => (0., 0.),
         };
 
         let mut next_movement_state = movement_state.clone();
 
         // handle running
 
+        // see if the player just pressed right/left
         let pressed_right = action.pressed(&PlatformerAction::Right);
         let pressed_left = action.pressed(&PlatformerAction::Left);
+
+        // set x velocity
         if pressed_right && !pressed_left {
-            velocity.linvel.x = base_x_vel + 150.;
+            velocity.linvel.x = base_x_vel + RUN_VELOCITY;
             next_movement_state = MovementState::Running(RunningDirection::Right);
         } else if pressed_left && !pressed_right {
-            velocity.linvel.x = base_x_vel + -150.;
+            velocity.linvel.x = base_x_vel + -RUN_VELOCITY;
             next_movement_state = MovementState::Running(RunningDirection::Left);
         } else {
             velocity.linvel.x = base_x_vel;
@@ -135,31 +144,42 @@ pub fn player_movement(
 
         // handle climbing
 
+        // see if the player just pressed up/down
         let just_pressed_up_or_down = action.just_pressed(&PlatformerAction::Up)
             || action.just_pressed(&PlatformerAction::Down);
+
+        // set climbing state
         if climber.intersecting_climbables.is_empty() {
+            // if the climber isn't intersecting a climbable, then we're def not
+            // climbing
             climber.climbing = false;
         } else if just_pressed_up_or_down {
-            // hitting this branch also means that the player is, in fact,
-            // intersecting something climbable
+            // ^ implied && !climber.intersecting_climbables.is_empty()
+            // if the climber intersecting a climbable and just pressed up/down
+            // then we are climbing
             climber.climbing = true;
         }
 
+        // if we're climbing and we're pressing up/down, set out velocity
         if climber.climbing {
             let pressed_up = action.pressed(&PlatformerAction::Up);
             let pressed_down = action.pressed(&PlatformerAction::Down);
 
             if pressed_up && !pressed_down {
-                velocity.linvel.y = 150.;
+                velocity.linvel.y = CLIMB_VELOCITY;
                 next_movement_state = MovementState::Climbing(ClimbingDirection::Up);
             } else if pressed_down && !pressed_up {
-                velocity.linvel.y = -150.;
+                velocity.linvel.y = -CLIMB_VELOCITY;
                 next_movement_state = MovementState::Climbing(ClimbingDirection::Down);
             } else {
                 velocity.linvel.y = 0.;
             }
         }
 
+        // handle the jump buffer
+
+        // if we're on the ground and the jump buffer is running, that means
+        // the user pressed jump in the air recently
         if on_ground && !jump_buffer_timer.0.is_stopped() {
             jump_buffer_timer.0.pause();
             velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
@@ -167,29 +187,40 @@ pub fn player_movement(
         }
 
         // handle jumping
+
+        // see if we just pressed jump
         let just_pressed_jump = action.just_pressed(&PlatformerAction::Jump);
+
+        // if you pressed jump
         if just_pressed_jump {
             match jumper.deref_mut() {
+                // and you're _not_ currently jumping
                 Jumper::NotJumping => {
+                    // and your on the ground, climbing, or we're within range
+                    // of the coyote timer, then jump
                     if on_ground || climber.climbing || !coyote_timer.0.is_stopped() {
+                        // disable the coyote timer (may be noop)
                         coyote_timer.0.pause();
-                        if velocity.linvel.x == base_x_vel {
-                            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
-                        } else {
-                            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
-                        }
+
+                        // set the y vel
+                        velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
+
+                        // set game state
                         *jumper = Jumper::mk_jumping();
                         climber.climbing = false;
                         next_movement_state = MovementState::Jumping;
                     }
                 }
+                // and you _are_ not currently jumping
                 Jumper::Jumping(ref mut jumping) => {
                     if !climber.climbing {
+                        // see if you have any jumps left, and if so decrement
+                        // your remaining jumps
                         if jumping.jumps_left > 0 {
                             velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
                             jumping.jumps_left -= 1;
                         } else {
-                            println!("Set Jump Buffer");
+                            // trigger the jump buffer
                             jump_buffer_timer.0.restart();
                         }
                     }
@@ -197,11 +228,13 @@ pub fn player_movement(
             }
         }
 
+        // If you didn't just just press jump, you y vel is stable, and you're
+        // on the ground, then reset jump state
         if !just_pressed_jump && velocity.linvel.y == base_y_vel && on_ground {
             *jumper = Jumper::mk_not_jumping();
         }
 
-        // set state
+        // set movement state
         if next_movement_state != *movement_state {
             *movement_state = next_movement_state;
         } else if !pressed_left
@@ -220,6 +253,7 @@ pub fn player_movement(
 
 // ACTIONS
 
+/// configure the keys -> action mapping  for the player
 fn setup_player_actions(mut commands: Commands, mut query: Query<Entity, Added<Player>>) {
     if query.is_empty() {
         return;
@@ -239,6 +273,7 @@ fn setup_player_actions(mut commands: Commands, mut query: Query<Entity, Added<P
 
 // SPRITE ANIMATION
 
+// animating config
 #[derive(Component, PartialEq)]
 struct AnimationConfig {
     first_sprite_index: usize,
@@ -249,7 +284,6 @@ struct AnimationConfig {
     frame_timer_mode: TimerMode,
     for_state: MovementState,
 }
-
 impl AnimationConfig {
     fn new(
         first: usize,
@@ -275,6 +309,7 @@ impl AnimationConfig {
     }
 }
 
+/// set the sprite animation for player
 fn set_sprite_animation(
     mut commands: Commands,
     mut query: Query<
@@ -294,6 +329,7 @@ fn set_sprite_animation(
     }
 }
 
+/// for the provided movement state, get the animation config
 fn get_anmation_for_movement_state(state: &MovementState) -> AnimationConfig {
     match state {
         MovementState::Idling | MovementState::Climbing(_) => {
@@ -306,6 +342,7 @@ fn get_anmation_for_movement_state(state: &MovementState) -> AnimationConfig {
     }
 }
 
+/// animate the sprite with the current animation config
 fn animate_sprite(time: Res<Time>, mut query: Query<(&mut AnimationConfig, &mut Sprite)>) {
     for (mut animation, mut sprite) in &mut query {
         animation.frame_timer.tick(time.delta());
@@ -327,7 +364,7 @@ fn animate_sprite(time: Res<Time>, mut query: Query<(&mut AnimationConfig, &mut 
     }
 }
 
-// the sprite is flipped before the animation ends
+/// flip the sprite animation based on the players movement direction
 fn set_sprite_direction(
     mut query: Query<(&mut Sprite, &AnimationConfig), (With<Player>, Changed<AnimationConfig>)>,
 ) {
@@ -345,6 +382,7 @@ fn set_sprite_direction(
 
 // JUMP BUFFR TIMER
 
+/// store the jump buffer
 #[derive(Component, Clone)]
 pub struct JumpBufferTimer(Timer);
 
@@ -356,6 +394,7 @@ impl Default for JumpBufferTimer {
     }
 }
 
+/// tick the jump buffer
 fn tick_jump_buffer(time: Res<Time>, mut query: Query<&mut JumpBufferTimer>) {
     for mut jump_buffer in query.iter_mut() {
         jump_buffer.0.tick(time.delta());
@@ -364,6 +403,7 @@ fn tick_jump_buffer(time: Res<Time>, mut query: Query<&mut JumpBufferTimer>) {
 
 // PLUGIN
 
+/// handles player movement & sprite anmiation
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -371,10 +411,12 @@ impl Plugin for PlayerPlugin {
         app.register_ldtk_entity::<PlayerBundle>("Player")
             .add_systems(
                 Update,
+                // player movement systems
                 (setup_player_actions, player_movement, tick_jump_buffer),
             )
             .add_systems(
                 Update,
+                // sprite systems
                 (
                     set_sprite_animation,
                     set_sprite_direction.after(set_sprite_animation),

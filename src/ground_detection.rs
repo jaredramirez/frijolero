@@ -1,59 +1,38 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashSet, time::Duration};
 
-use crate::platform::Platform;
 use crate::timer_helpers::TimerHelper;
 
 // ground detection
 
+/// component to pub on all thing we want to know their ground state
 #[derive(Component)]
 pub struct GroundSensor {
     pub ground_detection_entity: Entity,
-    pub intersecting_ground_entities: HashMap<Entity, GroundAttrs>,
-}
-#[derive(Eq, Hash, PartialEq, Clone, Default)]
-pub struct GroundAttrs {
-    pub is_platform: bool,
+    pub intersecting_ground_entities: HashSet<Entity>,
 }
 
-#[derive(Clone, Component)]
-pub struct GroundDetection {
-    pub grounded: Grounded,
-    pub was_on_ground: bool,
+///
+#[derive(Clone, Component, Default)]
+pub enum GroundDetection {
+    OnGround(Entity),
+    #[default]
+    NotOnGround,
 }
 impl GroundDetection {
     pub fn on_ground(&self) -> bool {
-        self.grounded.on_ground()
-    }
-}
-impl Default for GroundDetection {
-    fn default() -> Self {
-        Self {
-            grounded: Grounded::NotOnGround,
-            was_on_ground: false,
-        }
-    }
-}
-
-#[derive(Clone, Component)]
-pub enum Grounded {
-    OnGround(Entity, GroundAttrs),
-    NotOnGround,
-}
-impl Grounded {
-    fn on_ground(&self) -> bool {
         match self {
-            &Grounded::OnGround(_, _) => true,
-            &Grounded::NotOnGround => false,
+            &GroundDetection::OnGround(_) => true,
+            &GroundDetection::NotOnGround => false,
         }
     }
 }
 
+/// coyote timer
 #[derive(Component, Clone)]
-pub struct CoyoteTimer2(pub Timer);
-
-impl Default for CoyoteTimer2 {
+pub struct CoyoteTimer(pub Timer);
+impl Default for CoyoteTimer {
     fn default() -> Self {
         let mut coyote_timer = Timer::new(Duration::from_secs_f32(0.2), TimerMode::Once);
         coyote_timer.pause();
@@ -61,7 +40,8 @@ impl Default for CoyoteTimer2 {
     }
 }
 
-// build sensors to determin
+/// when GroundDetection is added to entity, add various other components
+/// needed for ground detection. notably GroundSensor & collision events
 pub fn spawn_ground_sensor(
     mut commands: Commands,
     detect_ground_for: Query<(Entity, &Collider), Added<GroundDetection>>,
@@ -84,38 +64,31 @@ pub fn spawn_ground_sensor(
                     .insert(GlobalTransform::default())
                     .insert(GroundSensor {
                         ground_detection_entity: entity,
-                        intersecting_ground_entities: HashMap::new(),
+                        intersecting_ground_entities: HashSet::new(),
                     });
             });
         }
     }
 }
 
+/// update the GroundSensor every time a collision event occurs
 pub fn ground_detection(
     mut ground_sensors: Query<&mut GroundSensor>,
     mut collisions: EventReader<CollisionEvent>,
-    collidables: Query<(Entity, Option<&Platform>), (With<Collider>, Without<Sensor>)>,
+    collidables: Query<Entity, (With<Collider>, Without<Sensor>)>,
 ) {
     for collision_event in collisions.read() {
+        // if we're we have an evenr, figure out which entity is
+        // intersecting which and add/remove it from our list of collision
         match collision_event {
             CollisionEvent::Started(e1, e2, _) => {
-                if let Ok((_ent, opt_platform)) = collidables.get(*e1) {
+                if let Ok(_ent) = collidables.get(*e1) {
                     if let Ok(mut sensor) = ground_sensors.get_mut(*e2) {
-                        sensor.intersecting_ground_entities.insert(
-                            *e1,
-                            GroundAttrs {
-                                is_platform: opt_platform.is_some(),
-                            },
-                        );
+                        sensor.intersecting_ground_entities.insert(*e1);
                     }
-                } else if let Ok((_ent, opt_platform)) = collidables.get(*e2) {
+                } else if let Ok(_ent) = collidables.get(*e2) {
                     if let Ok(mut sensor) = ground_sensors.get_mut(*e1) {
-                        sensor.intersecting_ground_entities.insert(
-                            *e2,
-                            GroundAttrs {
-                                is_platform: opt_platform.is_some(),
-                            },
-                        );
+                        sensor.intersecting_ground_entities.insert(*e2);
                     }
                 }
             }
@@ -134,23 +107,28 @@ pub fn ground_detection(
     }
 }
 
+/// update GroundDetection based on GroundSensor
 pub fn update_on_ground(
-    mut ground_detectors: Query<(&mut GroundDetection, &mut CoyoteTimer2)>,
+    mut ground_detectors: Query<(&mut GroundDetection, &mut CoyoteTimer)>,
     ground_sensors: Query<&GroundSensor, Changed<GroundSensor>>,
 ) {
+    // for every sensor
     for sensor in &ground_sensors {
+        // get the ground detection & coyote time for the sensor entity
         if let Ok((mut ground_detection, mut coyote_timer)) =
             ground_detectors.get_mut(sensor.ground_detection_entity)
         {
             let old_on_ground = ground_detection.on_ground();
-            if let Some((ground_ent, ground_attrs)) =
-                sensor.intersecting_ground_entities.iter().next()
-            {
-                ground_detection.grounded = Grounded::OnGround(*ground_ent, ground_attrs.clone());
+
+            // update ground detection
+            if let Some(ground_ent) = sensor.intersecting_ground_entities.iter().next() {
+                *ground_detection = GroundDetection::OnGround(*ground_ent);
             } else {
-                ground_detection.grounded = Grounded::NotOnGround;
+                *ground_detection = GroundDetection::NotOnGround;
+
+                // if we were on the ground, but now we're not, start the
+                // coyote timer
                 if old_on_ground {
-                    println!("COYOTE");
                     coyote_timer.0.restart();
                 }
             }
@@ -158,13 +136,14 @@ pub fn update_on_ground(
     }
 }
 
-fn tick_coyote_timer(time: Res<Time>, mut query: Query<&mut CoyoteTimer2>) {
+/// tick the coyote timer
+fn tick_coyote_timer(time: Res<Time>, mut query: Query<&mut CoyoteTimer>) {
     for mut coyote in query.iter_mut() {
         coyote.0.tick(time.delta());
     }
 }
 
-/// Handles platformer-specific physics operations, specifically ground detection.
+/// handles platformer-specific physics operations, specifically ground detection.
 pub struct GroundDetectionPlugin;
 
 impl Plugin for GroundDetectionPlugin {
