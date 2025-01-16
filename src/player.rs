@@ -5,11 +5,12 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::dynamics::Velocity;
 use leafwing_input_manager::prelude::*;
 
+use crate::timer_helpers::TimerHelper;
 use crate::{
     actions::PlatformerAction,
     climbing::Climber,
     colliders::ColliderBundle,
-    ground_detection::{GroundDetection, Grounded},
+    ground_detection::{CoyoteTimer2, GroundDetection, Grounded},
     inventory::Inventory,
     jumping::Jumper,
     platform::Platform,
@@ -31,7 +32,7 @@ pub struct PlayerBundle {
     pub climber: Climber,
     pub jumper: Jumper,
     pub ground_detection: GroundDetection,
-    pub coyote_timer: CoyoteTimer,
+    pub coyote_timer: CoyoteTimer2,
     pub jump_buffer_timer: JumpBufferTimer,
 
     // Build Items Component manually by using `impl From<&EntityInstance>`
@@ -80,7 +81,7 @@ pub fn player_movement(
             &mut Velocity,
             &mut Climber,
             &mut Jumper,
-            &mut CoyoteTimer,
+            &mut CoyoteTimer2,
             &mut JumpBufferTimer,
             &GroundDetection,
         ),
@@ -198,12 +199,6 @@ pub fn player_movement(
 
         if !just_pressed_jump && velocity.linvel.y == base_y_vel && on_ground {
             *jumper = Jumper::mk_not_jumping();
-        }
-
-        println!("{} {}", on_ground, ground_detection.was_on_ground);
-        if !on_ground && ground_detection.was_on_ground && !jumper.is_jumping() {
-            println!("Set Coyote Jump");
-            coyote_timer.0.restart();
         }
 
         // set state
@@ -348,32 +343,7 @@ fn set_sprite_direction(
     }
 }
 
-// COYOTE TIMER
-
-pub trait TimerHelper {
-    fn restart(&mut self);
-    fn is_stopped(&mut self) -> bool;
-}
-impl TimerHelper for Timer {
-    fn restart(&mut self) {
-        self.reset();
-        self.unpause();
-    }
-    fn is_stopped(&mut self) -> bool {
-        return self.paused() || self.finished();
-    }
-}
-
-#[derive(Component, Clone)]
-pub struct CoyoteTimer(Timer);
-
-impl Default for CoyoteTimer {
-    fn default() -> Self {
-        let mut coyote_timer = Timer::new(Duration::from_secs_f32(0.1), TimerMode::Once);
-        coyote_timer.pause();
-        Self(coyote_timer)
-    }
-}
+// JUMP BUFFR TIMER
 
 #[derive(Component, Clone)]
 pub struct JumpBufferTimer(Timer);
@@ -386,9 +356,8 @@ impl Default for JumpBufferTimer {
     }
 }
 
-fn tick_timers(time: Res<Time>, mut query: Query<(&mut CoyoteTimer, &mut JumpBufferTimer)>) {
-    for (mut coyote, mut jump_buffer) in query.iter_mut() {
-        coyote.0.tick(time.delta());
+fn tick_jump_buffer(time: Res<Time>, mut query: Query<&mut JumpBufferTimer>) {
+    for mut jump_buffer in query.iter_mut() {
         jump_buffer.0.tick(time.delta());
     }
 }
@@ -400,7 +369,10 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.register_ldtk_entity::<PlayerBundle>("Player")
-            .add_systems(Update, (setup_player_actions, player_movement, tick_timers))
+            .add_systems(
+                Update,
+                (setup_player_actions, player_movement, tick_jump_buffer),
+            )
             .add_systems(
                 Update,
                 (

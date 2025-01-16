@@ -16,6 +16,7 @@ mod misc_objects;
 mod obstacle;
 mod platform;
 mod player;
+mod timer_helpers;
 mod walls;
 
 fn main() {
