@@ -13,7 +13,7 @@ pub struct ObstacleBundle {
     pub sprite_sheet: Sprite,
     #[from_entity_instance]
     pub collider_bundle: ColliderBundle,
-    pub enemy: Obstacle,
+    pub obstacle: Obstacle,
     #[ldtk_entity]
     pub patrol: Patrol,
 }

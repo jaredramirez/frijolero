@@ -14,7 +14,6 @@ pub struct PlatformBundle {
     #[from_entity_instance]
     pub collider_bundle: ColliderBundle,
     pub platform: Platform,
-    pub global_transform: GlobalTransform,
     #[ldtk_entity]
     pub patrol: Patrol,
 }
@@ -36,15 +35,6 @@ impl LdtkEntity for Patrol {
         _: &mut Assets<TextureAtlasLayout>,
     ) -> Patrol {
         let mut points = Vec::new();
-        println!(
-            "POINT: {}",
-            ldtk_pixel_coords_to_translation_pivoted(
-                entity_instance.px,
-                layer_instance.c_hei * layer_instance.grid_size,
-                IVec2::new(entity_instance.width, entity_instance.height),
-                entity_instance.pivot,
-            )
-        );
         points.push(ldtk_pixel_coords_to_translation_pivoted(
             entity_instance.px,
             layer_instance.c_hei * layer_instance.grid_size,
