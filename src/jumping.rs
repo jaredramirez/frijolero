@@ -15,7 +15,7 @@ impl Jumper {
     }
 
     pub fn mk_jumping() -> Self {
-        Jumper::Jumping(Jumping { jumps_left: 0 })
+        Jumper::Jumping(Jumping { jumps_left: 1 })
     }
     pub fn mk_not_jumping() -> Self {
         Jumper::NotJumping

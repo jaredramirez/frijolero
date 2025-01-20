@@ -30,7 +30,6 @@ pub struct PlayerBundle {
     pub player: Player,
     #[worldly]
     pub worldly: Worldly,
-    pub movement_state: MovementState,
     pub climber: Climber,
     pub jumper: Jumper,
     pub ground_detection: GroundDetection,
@@ -48,30 +47,6 @@ pub struct PlayerBundle {
 
 // MOVEMENT
 
-/// current state of the user
-#[derive(Component, PartialEq, Debug, Copy, Clone)]
-pub enum MovementState {
-    Idling,
-    Running(RunningDirection),
-    Climbing(ClimbingDirection),
-    Jumping,
-}
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub enum RunningDirection {
-    Right,
-    Left,
-}
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub enum ClimbingDirection {
-    Up,
-    Down,
-}
-impl Default for MovementState {
-    fn default() -> Self {
-        MovementState::Idling
-    }
-}
-
 // movement constants
 
 const JUMP_VELOCITY: f32 = 400.;
@@ -86,7 +61,6 @@ pub fn player_movement(
         (
             Entity,
             &ActionState<PlatformerAction>,
-            &mut MovementState,
             &mut Velocity,
             &mut Climber,
             &mut Jumper,
@@ -100,7 +74,6 @@ pub fn player_movement(
     for (
         ent,
         action,
-        mut movement_state,
         mut velocity,
         mut climber,
         mut jumper,
@@ -126,8 +99,6 @@ pub fn player_movement(
             GroundDetection::NotOnGround => (0., 0.),
         };
 
-        let mut next_movement_state = movement_state.clone();
-
         // handle running
 
         // see if the player just pressed right/left
@@ -137,11 +108,9 @@ pub fn player_movement(
         // set x velocity
         if pressed_right && !pressed_left {
             velocity.linvel.x = base_x_vel + RUN_VELOCITY;
-            next_movement_state = MovementState::Running(RunningDirection::Right);
             animation_event.send(AnimationEvent::running(ent, RunningDirection::Right));
         } else if pressed_left && !pressed_right {
             velocity.linvel.x = base_x_vel + -RUN_VELOCITY;
-            next_movement_state = MovementState::Running(RunningDirection::Left);
             animation_event.send(AnimationEvent::running(ent, RunningDirection::Left));
         } else {
             velocity.linvel.x = base_x_vel;
@@ -172,11 +141,9 @@ pub fn player_movement(
 
             if pressed_up && !pressed_down {
                 velocity.linvel.y = CLIMB_VELOCITY;
-                next_movement_state = MovementState::Climbing(ClimbingDirection::Up);
                 animation_event.send(AnimationEvent::climbing(ent, ClimbingDirection::Up));
             } else if pressed_down && !pressed_up {
                 velocity.linvel.y = -CLIMB_VELOCITY;
-                next_movement_state = MovementState::Climbing(ClimbingDirection::Down);
                 animation_event.send(AnimationEvent::climbing(ent, ClimbingDirection::Down));
             } else {
                 velocity.linvel.y = 0.;
@@ -215,7 +182,6 @@ pub fn player_movement(
                         // set game state
                         *jumper = Jumper::mk_jumping();
                         climber.climbing = false;
-                        next_movement_state = MovementState::Jumping;
                         animation_event.send(AnimationEvent::jumping(ent));
                     }
                 }
@@ -243,18 +209,14 @@ pub fn player_movement(
         }
 
         // set movement state
-        if next_movement_state != *movement_state {
-            *movement_state = next_movement_state;
-        } else if !pressed_left
+        if !pressed_left
             && !pressed_left
             && !just_pressed_jump
             && !climber.climbing
             && !jumper.is_jumping()
             && velocity.linvel.x == base_x_vel
             && velocity.linvel.y == base_y_vel
-            && *movement_state != MovementState::Idling
         {
-            *movement_state = MovementState::Idling;
             animation_event.send(AnimationEvent::idling(ent));
         }
     }
@@ -321,9 +283,19 @@ pub enum AnimationEventType {
     Climbing(ClimbingDirection),
     Jumping,
 }
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum RunningDirection {
+    Right,
+    Left,
+}
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum ClimbingDirection {
+    Up,
+    Down,
+}
 
 // animating config
-#[derive(Component, PartialEq)]
+#[derive(Component, PartialEq, Debug)]
 struct AnimationConfig {
     first_sprite_index: usize,
     skip_sprite_indexes: Vec<usize>,
@@ -367,7 +339,9 @@ fn recieve_animation_event(
     for animation_event in animation_events.read() {
         let next_animation = get_anmation_for_movement_event(&animation_event.typ);
         if let Ok(mut animation) = animation_config_query.get_mut(animation_event.ent) {
-            *animation = next_animation;
+            if animation.for_event != next_animation.for_event {
+                *animation = next_animation;
+            }
         } else {
             if let Some(mut ent_cmds) = commands.get_entity(animation_event.ent) {
                 ent_cmds.insert(next_animation);
@@ -390,39 +364,6 @@ fn get_anmation_for_movement_event(event_type: &AnimationEventType) -> Animation
         }
     }
 }
-
-/// set the sprite animation for player
-// fn set_sprite_animation(
-//     mut commands: Commands,
-//     mut query: Query<
-//         (Entity, &MovementState, Option<&mut AnimationConfig>),
-//         (Changed<MovementState>, With<Player>),
-//     >,
-// ) {
-//     for (ent, movement_state, mut opt_animation) in query.iter_mut() {
-//         if let Some(mut ent_cmds) = commands.get_entity(ent) {
-//             let next_animation = get_anmation_for_movement_state(&movement_state);
-//             if let Some(animation) = &mut opt_animation {
-//                 **animation = next_animation;
-//             } else {
-//                 ent_cmds.insert(next_animation);
-//             }
-//         }
-//     }
-// }
-
-// /// for the provided movement state, get the animation config
-// fn get_anmation_for_movement_state(state: &MovementState) -> AnimationConfig {
-//     match state {
-//         MovementState::Idling | MovementState::Climbing(_) => {
-//             AnimationConfig::new(0, vec![1, 2, 3, 4], 5, 3, TimerMode::Repeating, *state)
-//         }
-//         MovementState::Jumping => AnimationConfig::new(4, vec![], 4, 10, TimerMode::Once, *state),
-//         MovementState::Running(_) => {
-//             AnimationConfig::new(1, vec![2], 3, 15, TimerMode::Repeating, *state)
-//         }
-//     }
-// }
 
 /// animate the sprite with the current animation config
 fn animate_sprite(time: Res<Time>, mut query: Query<(&mut AnimationConfig, &mut Sprite)>) {
