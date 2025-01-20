@@ -1,11 +1,19 @@
-use bevy::prelude::*;
+use std::path::PathBuf;
+
+use bevy::{asset::AssetPath, prelude::*};
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
 
 use crate::player::Player;
 
+#[derive(Resource)]
+pub struct GameFile {
+    pub path: PathBuf,
+}
+
 pub fn setup(
     mut commands: Commands,
+    game_file: Res<GameFile>,
     asset_server: Res<AssetServer>,
     mut rapier_config: Query<&mut RapierConfiguration>,
 ) {
@@ -13,12 +21,22 @@ pub fn setup(
 
     rapier_config.single_mut().gravity = Vec2::new(0.0, -2000.0);
 
-    let ldtk_handle = asset_server.load("bean_platformer.ldtk").into();
+    let ldtk_handle = asset_server
+        .load(AssetPath::from_path(&game_file.path))
+        .into();
     commands.spawn(LdtkWorldBundle {
         ldtk_handle,
         ..Default::default()
     });
 }
+
+// pub fn setup(
+//     mut commands: Commands,
+//     game_file: Res<GameFile>,
+//     asset_server: Res<AssetServer>,
+//     mut rapier_config: Query<&mut RapierConfiguration>,
+// ) {
+// }
 
 pub fn update_level_selection(
     level_query: Query<(&LevelIid, &Transform), Without<Player>>,

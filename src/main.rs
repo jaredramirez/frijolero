@@ -1,8 +1,9 @@
-use std::env;
+use std::{env, path::Path};
 
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
+use game_flow::GameFile;
 use leafwing_input_manager::prelude::*;
 
 mod actions;
@@ -22,17 +23,24 @@ mod timer_helpers;
 mod walls;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    dbg!(args);
+    let game_path_string: String = env::args()
+        .nth(1)
+        .unwrap_or("bean_platformer.ldtk".to_string());
+    let game_path = Path::new(&game_path_string).to_path_buf();
 
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(AssetPlugin::default()),
+        )
         .add_plugins(InputManagerPlugin::<actions::PlatformerAction>::default())
         .add_plugins((
             LdtkPlugin,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
             RapierDebugRenderPlugin::default(),
         ))
+        .insert_resource(GameFile { path: game_path })
         .insert_resource(LevelSelection::Uid(0))
         .insert_resource(LdtkSettings {
             level_spawn_behavior: LevelSpawnBehavior::UseWorldTranslation {

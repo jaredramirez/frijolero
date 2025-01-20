@@ -79,3 +79,12 @@ just run
 You should see other things installing now, this is the tool `cargo` installing
 everything needed to run the game. This will likely take several minutes. Once
 it's done, a window with the game running should appear!
+
+### Choosing which level to load
+
+Now, by default running the game loads the level in
+`assets/levels/test/level.ldtk`. To change which level to load, run:
+
+```sh
+just run level="path/to/my/level.ldtk"
+```
