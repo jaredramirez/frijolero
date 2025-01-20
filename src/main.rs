@@ -1,3 +1,5 @@
+use std::env;
+
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -20,6 +22,9 @@ mod timer_helpers;
 mod walls;
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    dbg!(args);
+
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(InputManagerPlugin::<actions::PlatformerAction>::default())
