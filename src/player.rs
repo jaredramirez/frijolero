@@ -5,6 +5,7 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::dynamics::Velocity;
 use leafwing_input_manager::prelude::*;
 
+use crate::jumping::{DashDirection, Dasher};
 use crate::timer_helpers::TimerHelper;
 use crate::{
     actions::PlatformerAction,
@@ -32,6 +33,7 @@ pub struct PlayerBundle {
     pub worldly: Worldly,
     pub climber: Climber,
     pub jumper: Jumper,
+    pub dasher: Dasher,
     pub ground_detection: GroundDetection,
     pub coyote_timer: CoyoteTimer,
     pub jump_buffer_timer: JumpBufferTimer,
@@ -52,6 +54,8 @@ pub struct PlayerBundle {
 const JUMP_VELOCITY: f32 = 400.;
 const RUN_VELOCITY: f32 = 150.;
 const CLIMB_VELOCITY: f32 = 150.;
+const DASH_VELOCITY: f32 = 600.;
+const DASH_VELOCITY_VEC: Vec2 = Vec2::new(DASH_VELOCITY, DASH_VELOCITY);
 
 /// configure player movement
 pub fn player_movement(
@@ -60,10 +64,12 @@ pub fn player_movement(
     mut player_query: Query<
         (
             Entity,
+            &Sprite,
             &ActionState<PlatformerAction>,
             &mut Velocity,
             &mut Climber,
             &mut Jumper,
+            &mut Dasher,
             &mut CoyoteTimer,
             &mut JumpBufferTimer,
             &GroundDetection,
@@ -73,10 +79,12 @@ pub fn player_movement(
 ) {
     for (
         ent,
+        sprite,
         action,
         mut velocity,
         mut climber,
         mut jumper,
+        mut dasher,
         mut coyote_timer,
         mut jump_buffer_timer,
         ground_detection,
@@ -86,17 +94,15 @@ pub fn player_movement(
 
         // if on a platform, get the platform's velocity
         // this is the base velocity on top of any user input movement velocity
-        let (base_x_vel, base_y_vel) = match &ground_detection {
+        let base_vel = match &ground_detection {
             GroundDetection::OnGround(ground_ent) => {
-                let mut x_vel = 0.;
-                let mut y_vel = 0.;
                 if let Ok((_, platform_vel)) = platforms_query.get(*ground_ent) {
-                    x_vel = platform_vel.linvel.x;
-                    y_vel = platform_vel.linvel.y;
+                    platform_vel.linvel
+                } else {
+                    Vec2::new(0., 0.)
                 }
-                (x_vel, y_vel)
             }
-            GroundDetection::NotOnGround => (0., 0.),
+            GroundDetection::NotOnGround => Vec2::new(0., 0.),
         };
 
         // handle running
@@ -107,13 +113,13 @@ pub fn player_movement(
 
         // set x velocity
         if pressed_right && !pressed_left {
-            velocity.linvel.x = base_x_vel + RUN_VELOCITY;
+            velocity.linvel.x = base_vel.x + RUN_VELOCITY;
             animation_event.send(AnimationEvent::running(ent, RunningDirection::Right));
         } else if pressed_left && !pressed_right {
-            velocity.linvel.x = base_x_vel + -RUN_VELOCITY;
+            velocity.linvel.x = base_vel.x + -RUN_VELOCITY;
             animation_event.send(AnimationEvent::running(ent, RunningDirection::Left));
         } else {
-            velocity.linvel.x = base_x_vel;
+            velocity.linvel.x = base_vel.x;
         }
 
         // handle climbing
@@ -135,10 +141,9 @@ pub fn player_movement(
         }
 
         // if we're climbing and we're pressing up/down, set out velocity
+        let pressed_up = action.pressed(&PlatformerAction::Up);
+        let pressed_down = action.pressed(&PlatformerAction::Down);
         if climber.climbing {
-            let pressed_up = action.pressed(&PlatformerAction::Up);
-            let pressed_down = action.pressed(&PlatformerAction::Down);
-
             if pressed_up && !pressed_down {
                 velocity.linvel.y = CLIMB_VELOCITY;
                 animation_event.send(AnimationEvent::climbing(ent, ClimbingDirection::Up));
@@ -156,7 +161,7 @@ pub fn player_movement(
         // the user pressed jump in the air recently
         if on_ground && !jump_buffer_timer.0.is_stopped() {
             jump_buffer_timer.0.pause();
-            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
+            velocity.linvel.y = base_vel.y + JUMP_VELOCITY;
             *jumper = Jumper::mk_jumping();
         }
 
@@ -168,54 +173,101 @@ pub fn player_movement(
         // if you pressed jump
         if just_pressed_jump {
             match jumper.deref_mut() {
-                // and you're _not_ currently jumping
-                Jumper::NotJumping => {
-                    // and your on the ground, climbing, or we're within range
-                    // of the coyote timer, then jump
-                    if on_ground || climber.climbing || !coyote_timer.0.is_stopped() {
-                        // disable the coyote timer (may be noop)
-                        coyote_timer.0.pause();
+                // and you're _not_ currently jumping and you're on the ground,
+                // climbing, or we're within range of the coyote timer, then
+                // jump
+                Jumper::NotJumping
+                    if on_ground || climber.climbing || !coyote_timer.0.is_stopped() =>
+                {
+                    // disable the coyote timer (may be noop)
+                    coyote_timer.0.pause();
 
-                        // set the y vel
-                        velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
+                    // set the y vel
+                    velocity.linvel.y = base_vel.y + JUMP_VELOCITY;
 
-                        // set game state
-                        *jumper = Jumper::mk_jumping();
-                        climber.climbing = false;
-                        animation_event.send(AnimationEvent::jumping(ent));
+                    // set game state
+                    *jumper = Jumper::mk_jumping();
+                    climber.climbing = false;
+                    animation_event.send(AnimationEvent::jumping(ent));
+                }
+                // and are mid-jump, and are not climbing
+                Jumper::Jumping(ref mut jumping) if !climber.climbing => {
+                    // see if you have any jumps left, and if so decrement
+                    // your remaining jumps
+                    if jumping.jumps_left > 0 {
+                        velocity.linvel.y = base_vel.y + JUMP_VELOCITY;
+                        jumping.jumps_left -= 1;
+                    } else {
+                        // trigger the jump buffer
+                        jump_buffer_timer.0.restart();
                     }
                 }
-                // and you _are_ not currently jumping
-                Jumper::Jumping(ref mut jumping) => {
-                    if !climber.climbing {
-                        // see if you have any jumps left, and if so decrement
-                        // your remaining jumps
-                        if jumping.jumps_left > 0 {
-                            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
-                            jumping.jumps_left -= 1;
-                        } else {
-                            // trigger the jump buffer
-                            jump_buffer_timer.0.restart();
-                        }
-                    }
+                _ => {}
+            }
+        }
+
+        // handle dashing
+
+        // see if we just pressed dash
+        let just_pressed_dash = action.just_pressed(&PlatformerAction::Dash);
+
+        // if you pressed dash
+        if just_pressed_dash {
+            let dash_dir = DashDirection::make(
+                pressed_up,
+                pressed_right,
+                pressed_down,
+                pressed_left,
+                sprite.flip_x,
+            );
+            let dash_dir_vec = dash_dir.to_vec() * DASH_VELOCITY_VEC;
+            let next_linevel = velocity.linvel + dash_dir_vec + base_vel;
+            println!("{:?} {} {}", dash_dir, dash_dir_vec, next_linevel);
+
+            match dasher.deref_mut() {
+                // and you're _not_ currently dashing or climbing, then dash
+                Dasher::NotDashing if !climber.climbing => {
+                    // set the y vel
+                    velocity.linvel = next_linevel;
+
+                    // set game state
+                    *dasher = Dasher::mk_dashing();
+                    animation_event.send(AnimationEvent::dashing(ent));
                 }
+                // and you currently dashing with more dashes left
+                Dasher::Dashing(ref mut dashing) if !climber.climbing && dashing.dashs_left > 0 => {
+                    // dash, then decrement your remaining dashs
+                    velocity.linvel = next_linevel;
+                    dashing.dashs_left -= 1;
+                }
+                _ => {}
             }
         }
 
         // If you didn't just just press jump, you y vel is stable, and you're
         // on the ground, then reset jump state
-        if !just_pressed_jump && velocity.linvel.y == base_y_vel && on_ground {
+        if !just_pressed_jump && velocity.linvel.y == base_vel.y && on_ground {
             *jumper = Jumper::mk_not_jumping();
+        }
+
+        // If you didn't just just press dash, you y vel is stable, and you're
+        // on the ground, then reset dash state
+        if !just_pressed_dash
+            && velocity.linvel.y == base_vel.y
+            && velocity.linvel.x == base_vel.x
+            && on_ground
+        {
+            *dasher = Dasher::mk_not_dashing();
         }
 
         // set movement state
         if !pressed_left
-            && !pressed_left
+            && !pressed_right
             && !just_pressed_jump
             && !climber.climbing
             && !jumper.is_jumping()
-            && velocity.linvel.x == base_x_vel
-            && velocity.linvel.y == base_y_vel
+            && velocity.linvel.x == base_vel.x
+            && velocity.linvel.y == base_vel.y
         {
             animation_event.send(AnimationEvent::idling(ent));
         }
@@ -232,11 +284,13 @@ fn setup_player_actions(mut commands: Commands, mut query: Query<Entity, Added<P
     let player_ent = query.single_mut();
     if let Some(mut ent_cmds) = commands.get_entity(player_ent) {
         let input_map = InputMap::new([
-            (PlatformerAction::Jump, KeyCode::Space),
             (PlatformerAction::Right, KeyCode::ArrowRight),
             (PlatformerAction::Left, KeyCode::ArrowLeft),
             (PlatformerAction::Up, KeyCode::ArrowUp),
             (PlatformerAction::Down, KeyCode::ArrowDown),
+            (PlatformerAction::Jump, KeyCode::Space),
+            (PlatformerAction::Jump, KeyCode::KeyZ),
+            (PlatformerAction::Dash, KeyCode::KeyX),
         ]);
         ent_cmds.insert(InputManagerBundle::with_map(input_map));
     }
@@ -274,6 +328,12 @@ impl AnimationEvent {
             typ: AnimationEventType::Jumping,
         }
     }
+    fn dashing(ent: Entity) -> Self {
+        AnimationEvent {
+            ent,
+            typ: AnimationEventType::Dashing,
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Copy, Clone)]
@@ -282,6 +342,7 @@ pub enum AnimationEventType {
     Running(RunningDirection),
     Climbing(ClimbingDirection),
     Jumping,
+    Dashing,
 }
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum RunningDirection {
@@ -356,7 +417,7 @@ fn get_anmation_for_movement_event(event_type: &AnimationEventType) -> Animation
         AnimationEventType::Idling | AnimationEventType::Climbing(_) => {
             AnimationConfig::new(0, vec![1, 2, 3, 4], 5, 3, TimerMode::Repeating, *event_type)
         }
-        AnimationEventType::Jumping => {
+        AnimationEventType::Jumping | AnimationEventType::Dashing => {
             AnimationConfig::new(4, vec![], 4, 10, TimerMode::Once, *event_type)
         }
         AnimationEventType::Running(_) => {

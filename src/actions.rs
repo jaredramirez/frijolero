@@ -8,4 +8,5 @@ pub enum PlatformerAction {
     Down,
     Up,
     Jump,
+    Dash,
 }

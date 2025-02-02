@@ -38,7 +38,7 @@ fn main() {
         .add_plugins((
             LdtkPlugin,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
-            RapierDebugRenderPlugin::default(),
+            // RapierDebugRenderPlugin::default(),
         ))
         .insert_resource(GameFile { path: game_path })
         .insert_resource(LevelSelection::Uid(0))

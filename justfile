@@ -3,8 +3,8 @@ check:
         --filter "src/*.rs" \
         -- cargo check
 
-run file="levels/test/level.ldtk" :
-    cargo run -- {{file}}
+run level="levels/test/level.ldtk" :
+    cargo run -- {{level}}
 
 check-example:
     watchexec -c \
