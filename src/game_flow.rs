@@ -19,7 +19,7 @@ pub fn setup(
 ) {
     commands.spawn(Camera2d);
 
-    rapier_config.single_mut().gravity = Vec2::new(0.0, -2000.0);
+    rapier_config.single_mut().gravity = Vec2::new(0.0, -98.0);
 
     let ldtk_handle = asset_server
         .load(AssetPath::from_path(&game_file.path))
@@ -29,14 +29,6 @@ pub fn setup(
         ..Default::default()
     });
 }
-
-// pub fn setup(
-//     mut commands: Commands,
-//     game_file: Res<GameFile>,
-//     asset_server: Res<AssetServer>,
-//     mut rapier_config: Query<&mut RapierConfiguration>,
-// ) {
-// }
 
 pub fn update_level_selection(
     level_query: Query<(&LevelIid, &Transform), Without<Player>>,
