@@ -71,9 +71,19 @@ fn respawn_world(
     mut commands: Commands,
     ldtk_projects: Query<Entity, With<LdtkProjectHandle>>,
     input: Res<ButtonInput<KeyCode>>,
+    game_file: Res<GameFile>,
+    asset_server: Res<AssetServer>,
 ) {
     if input.just_pressed(KeyCode::KeyR) {
-        commands.entity(ldtk_projects.single()).insert(Respawn);
+        commands.entity(ldtk_projects.single()).despawn_recursive();
+
+        let ldtk_handle = asset_server
+            .load(AssetPath::from_path(&game_file.path))
+            .into();
+        commands.spawn(LdtkWorldBundle {
+            ldtk_handle,
+            ..Default::default()
+        });
     }
 }
 
