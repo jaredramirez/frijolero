@@ -32,12 +32,17 @@ fn main() {
         .add_plugins(
             DefaultPlugins
                 .set(ImagePlugin::default_nearest())
-                .set(AssetPlugin::default()),
+                .set(AssetPlugin {
+                    // TODO(prod): Disable on prod
+                    watch_for_changes_override: None,
+                    ..Default::default()
+                }),
         )
         .add_plugins(InputManagerPlugin::<actions::PlatformerAction>::default())
         .add_plugins((
             LdtkPlugin,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
+            // TODO(prod): Disable on prod
             RapierDebugRenderPlugin::default(),
         ))
         .insert_resource(GameFile { path: game_path })

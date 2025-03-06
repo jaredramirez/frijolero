@@ -21,6 +21,7 @@ pub struct PlatformBundle {
 #[derive(Clone, PartialEq, Debug, Default, Component)]
 pub struct Patrol {
     pub points: Vec<Vec2>,
+    pub speed: i32,
     pub index: usize,
     pub forward: bool,
 }
@@ -44,7 +45,11 @@ impl LdtkEntity for Patrol {
 
         let ldtk_patrol_points = entity_instance
             .iter_points_field("patrol")
-            .expect("patrol field should be correclty typed, expected Array<Point>");
+            .expect("expected 'patrol' field on platform of type Array<Point>");
+
+        let ldtk_patrol_speed = entity_instance
+            .get_int_field("speed")
+            .expect("expected 'speed' field on platform of type Int");
 
         for ldtk_point in ldtk_patrol_points {
             // The +1 is necessary here due to the pivot of the entities in the sample
@@ -65,6 +70,7 @@ impl LdtkEntity for Patrol {
 
         Patrol {
             points,
+            speed: *ldtk_patrol_speed,
             index: 1,
             forward: true,
         }
@@ -77,8 +83,9 @@ pub fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol), Wit
             continue;
         }
 
-        let mut new_velocity =
-            (patrol.points[patrol.index] - transform.translation.truncate()).normalize() * 75.;
+        let mut new_velocity = (patrol.points[patrol.index] - transform.translation.truncate())
+            .normalize()
+            * patrol.speed as f32;
 
         if new_velocity.dot(velocity.linvel) < 0. {
             if patrol.index == 0 {
