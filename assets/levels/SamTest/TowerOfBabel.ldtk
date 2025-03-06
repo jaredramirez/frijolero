@@ -11,7 +11,7 @@
 	"iid": "17f68300-c210-11ef-91ce-977f12ea2182",
 	"jsonVersion": "1.5.3",
 	"appBuildId": 473703,
-	"nextUid": 137,
+	"nextUid": 140,
 	"identifierStyle": "Capitalize",
 	"toc": [],
 	"worldLayout": "Free",
@@ -46,6 +46,41 @@
 			"identifier": "Entities",
 			"type": "Entities",
 			"uid": 91,
+			"doc": null,
+			"uiColor": null,
+			"gridSize": 16,
+			"guideGridWid": 0,
+			"guideGridHei": 0,
+			"displayOpacity": 1,
+			"inactiveOpacity": 0.6,
+			"hideInList": false,
+			"hideFieldsWhenInactive": true,
+			"canSelectWhenInactive": true,
+			"renderInWorldView": true,
+			"pxOffsetX": 0,
+			"pxOffsetY": 0,
+			"parallaxFactorX": 0,
+			"parallaxFactorY": 0,
+			"parallaxScaling": true,
+			"requiredTags": [],
+			"excludedTags": [],
+			"autoTilesKilledByOtherLayerUid": null,
+			"uiFilterTags": [],
+			"useAsyncRender": false,
+			"intGridValues": [],
+			"intGridValuesGroups": [],
+			"autoRuleGroups": [],
+			"autoSourceLayerDefUid": null,
+			"tilesetDefUid": null,
+			"tilePivotX": 0,
+			"tilePivotY": 0,
+			"biomeFieldUid": null
+		},
+		{
+			"__type": "Entities",
+			"identifier": "Meta_Entities",
+			"type": "Entities",
+			"uid": 137,
 			"doc": null,
 			"uiColor": null,
 			"gridSize": 16,
@@ -1443,8 +1478,8 @@
 			"tileRect": { "tilesetUid": 118, "x": 0, "y": 192, "w": 16, "h": 16 },
 			"uiTileRect": null,
 			"nineSliceBorders": [],
-			"maxCount": 0,
-			"limitScope": "PerLevel",
+			"maxCount": 1,
+			"limitScope": "PerWorld",
 			"limitBehavior": "MoveLastOne",
 			"pivotX": 0.5,
 			"pivotY": 1,
@@ -1704,8 +1739,80 @@
 					"allowedRefsEntityUid": null,
 					"allowedRefTags": [],
 					"tilesetUid": null
+				},
+				{
+					"identifier": "speed",
+					"doc": null,
+					"__type": "Int",
+					"uid": 139,
+					"type": "F_Int",
+					"isArray": false,
+					"canBeNull": false,
+					"arrayMinLength": null,
+					"arrayMaxLength": null,
+					"editorDisplayMode": "Hidden",
+					"editorDisplayScale": 1,
+					"editorDisplayPos": "Above",
+					"editorLinkStyle": "StraightArrow",
+					"editorDisplayColor": null,
+					"editorAlwaysShow": false,
+					"editorShowInWorld": true,
+					"editorCutLongValues": true,
+					"editorTextSuffix": null,
+					"editorTextPrefix": null,
+					"useForSmartColor": false,
+					"exportToToc": false,
+					"searchable": false,
+					"min": null,
+					"max": null,
+					"regex": null,
+					"acceptFileTypes": null,
+					"defaultOverride": { "id": "V_Int", "params": [50] },
+					"textLanguageMode": null,
+					"symmetricalRef": false,
+					"autoChainRef": true,
+					"allowOutOfLevelRef": true,
+					"allowedRefs": "OnlySame",
+					"allowedRefsEntityUid": null,
+					"allowedRefTags": [],
+					"tilesetUid": null
 				}
 			]
+		},
+		{
+			"identifier": "Player_Respawn",
+			"uid": 138,
+			"tags": [],
+			"exportToToc": false,
+			"allowOutOfBounds": false,
+			"doc": null,
+			"width": 16,
+			"height": 16,
+			"resizableX": false,
+			"resizableY": false,
+			"minWidth": null,
+			"maxWidth": null,
+			"minHeight": null,
+			"maxHeight": null,
+			"keepAspectRatio": false,
+			"tileOpacity": 1,
+			"fillOpacity": 1,
+			"lineOpacity": 1,
+			"hollow": false,
+			"color": "#F3EFEC",
+			"renderMode": "Rectangle",
+			"showName": true,
+			"tilesetId": null,
+			"tileRenderMode": "FitInside",
+			"tileRect": null,
+			"uiTileRect": null,
+			"nineSliceBorders": [],
+			"maxCount": 1,
+			"limitScope": "PerLevel",
+			"limitBehavior": "PreventAdding",
+			"pivotX": 0.5,
+			"pivotY": 1,
+			"fieldDefs": []
 		}
 	], "tilesets": [
 		{
@@ -1798,20 +1905,45 @@
 					"seed": 1986881,
 					"overrideTilesetUid": null,
 					"gridTiles": [],
+					"entityInstances": []
+				},
+				{
+					"__identifier": "Meta_Entities",
+					"__type": "Entities",
+					"__cWid": 68,
+					"__cHei": 33,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": null,
+					"__tilesetRelPath": null,
+					"iid": "337b5240-e920-11ef-b4b2-fd72c68c579d",
+					"levelId": 0,
+					"layerDefUid": 137,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [],
+					"autoLayerTiles": [],
+					"seed": 9398207,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
 					"entityInstances": [
 						{
-							"__identifier": "Player",
+							"__identifier": "Player_Respawn",
 							"__grid": [3,28],
 							"__pivot": [0.5,1],
 							"__tags": [],
-							"__tile": { "tilesetUid": 118, "x": 0, "y": 192, "w": 16, "h": 16 },
-							"__smartColor": "#733E39",
-							"iid": "c1db2020-e920-11ef-9659-af9163e4b85a",
+							"__tile": null,
+							"__smartColor": "#F3EFEC",
+							"iid": "5709cca0-e920-11ef-b4b2-93d97ddda1be",
 							"width": 16,
 							"height": 16,
-							"defUid": 11,
+							"defUid": 138,
 							"px": [56,464],
-							"fieldInstances": [{ "__identifier": "items", "__type": "Array<LocalEnum.Item>", "__value": [], "__tile": null, "defUid": 92, "realEditorValues": [] }],
+							"fieldInstances": [],
 							"__worldX": -8,
 							"__worldY": 176
 						}
@@ -4238,10 +4370,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [280,992],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 32, "cy": 61 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["32,61"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 32, "cy": 61 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["32,61"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 150, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [150] }] }
+							],
 							"__worldX": 1304,
 							"__worldY": 144
 						},
@@ -4257,10 +4392,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [840,832],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 52, "cy": 39 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["52,39"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 52, "cy": 39 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["52,39"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1864,
 							"__worldY": -16
 						},
@@ -4276,10 +4414,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [376,640],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 8, "cy": 39 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["8,39"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 8, "cy": 39 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["8,39"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 75, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [75] }] }
+							],
 							"__worldX": 1400,
 							"__worldY": -208
 						},
@@ -4295,10 +4436,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [72,672],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 4, "cy": 15 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["4,15"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 4, "cy": 15 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["4,15"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 100, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [100] }] }
+							],
 							"__worldX": 1096,
 							"__worldY": -176
 						},
@@ -4314,10 +4458,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [120,304],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 11, "cy": 18 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["11,18"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 11, "cy": 18 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["11,18"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1144,
 							"__worldY": -544
 						},
@@ -4333,12 +4480,73 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [232,352],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 28, "cy": 7 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["28,7"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 28, "cy": 7 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["28,7"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1256,
 							"__worldY": -496
+						},
+						{
+							"__identifier": "Player",
+							"__grid": [30,10],
+							"__pivot": [0.5,1],
+							"__tags": [],
+							"__tile": { "tilesetUid": 118, "x": 0, "y": 192, "w": 16, "h": 16 },
+							"__smartColor": "#733E39",
+							"iid": "c1db2020-e920-11ef-9659-af9163e4b85a",
+							"width": 16,
+							"height": 16,
+							"defUid": 11,
+							"px": [488,176],
+							"fieldInstances": [{ "__identifier": "items", "__type": "Array<LocalEnum.Item>", "__value": [], "__tile": null, "defUid": 92, "realEditorValues": [] }],
+							"__worldX": 1512,
+							"__worldY": -672
+						}
+					]
+				},
+				{
+					"__identifier": "Meta_Entities",
+					"__type": "Entities",
+					"__cWid": 62,
+					"__cHei": 68,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": null,
+					"__tilesetRelPath": null,
+					"iid": "337b7950-e920-11ef-b4b2-a9d167b9f527",
+					"levelId": 133,
+					"layerDefUid": 137,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [],
+					"autoLayerTiles": [],
+					"seed": 1314134,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": [
+						{
+							"__identifier": "Player_Respawn",
+							"__grid": [7,62],
+							"__pivot": [0.5,1],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#F3EFEC",
+							"iid": "5abce990-e920-11ef-b4b2-618d34e61883",
+							"width": 16,
+							"height": 16,
+							"defUid": 138,
+							"px": [120,1008],
+							"fieldInstances": [],
+							"__worldX": 1144,
+							"__worldY": 160
 						}
 					]
 				},
@@ -8791,10 +8999,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [840,560],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 39, "cy": 34 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["39,34"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 39, "cy": 34 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["39,34"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1864,
 							"__worldY": -976
 						},
@@ -8810,10 +9021,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [488,624],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 7, "cy": 38 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["7,38"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 7, "cy": 38 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["7,38"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1512,
 							"__worldY": -912
 						},
@@ -8829,10 +9043,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [88,496],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 19, "cy": 20 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["19,20"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 19, "cy": 20 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["19,20"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1112,
 							"__worldY": -1040
 						},
@@ -8848,10 +9065,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [888,416],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 55, "cy": 7 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["55,7"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 55, "cy": 7 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["55,7"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1912,
 							"__worldY": -1120
 						},
@@ -8867,12 +9087,57 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [40,128],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 2, "cy": 2 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["2,2"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 2, "cy": 2 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["2,2"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1064,
 							"__worldY": -1408
+						}
+					]
+				},
+				{
+					"__identifier": "Meta_Entities",
+					"__type": "Entities",
+					"__cWid": 62,
+					"__cHei": 43,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": null,
+					"__tilesetRelPath": null,
+					"iid": "337bc770-e920-11ef-b4b2-25d16fb42291",
+					"levelId": 134,
+					"layerDefUid": 137,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [],
+					"autoLayerTiles": [],
+					"seed": 8093826,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": [
+						{
+							"__identifier": "Player_Respawn",
+							"__grid": [58,38],
+							"__pivot": [0.5,1],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#F3EFEC",
+							"iid": "5d72bac0-e920-11ef-b4b2-e3634d7f6def",
+							"width": 16,
+							"height": 16,
+							"defUid": 138,
+							"px": [936,624],
+							"fieldInstances": [],
+							"__worldX": 1960,
+							"__worldY": -912
 						}
 					]
 				},
@@ -11731,16 +11996,19 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [280,480],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [ { "cx": 17, "cy": 25 }, { "cx": 21, "cy": 25 }, { "cx": 21, "cy": 29 } ], "__tile": null, "defUid": 128, "realEditorValues": [ {
-								"id": "V_String",
-								"params": ["17,25"]
-							}, {
-								"id": "V_String",
-								"params": ["21,25"]
-							}, {
-								"id": "V_String",
-								"params": ["21,29"]
-							} ] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [ { "cx": 17, "cy": 25 }, { "cx": 21, "cy": 25 }, { "cx": 21, "cy": 29 } ], "__tile": null, "defUid": 128, "realEditorValues": [ {
+									"id": "V_String",
+									"params": ["17,25"]
+								}, {
+									"id": "V_String",
+									"params": ["21,25"]
+								}, {
+									"id": "V_String",
+									"params": ["21,29"]
+								} ] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1304,
 							"__worldY": -1600
 						},
@@ -11756,16 +12024,19 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [376,416],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [ { "cx": 23, "cy": 21 }, { "cx": 27, "cy": 21 }, { "cx": 27, "cy": 25 } ], "__tile": null, "defUid": 128, "realEditorValues": [ {
-								"id": "V_String",
-								"params": ["23,21"]
-							}, {
-								"id": "V_String",
-								"params": ["27,21"]
-							}, {
-								"id": "V_String",
-								"params": ["27,25"]
-							} ] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [ { "cx": 23, "cy": 21 }, { "cx": 27, "cy": 21 }, { "cx": 27, "cy": 25 } ], "__tile": null, "defUid": 128, "realEditorValues": [ {
+									"id": "V_String",
+									"params": ["23,21"]
+								}, {
+									"id": "V_String",
+									"params": ["27,21"]
+								}, {
+									"id": "V_String",
+									"params": ["27,25"]
+								} ] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1400,
 							"__worldY": -1664
 						},
@@ -11781,16 +12052,19 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [472,352],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [ { "cx": 29, "cy": 17 }, { "cx": 33, "cy": 17 }, { "cx": 33, "cy": 21 } ], "__tile": null, "defUid": 128, "realEditorValues": [ {
-								"id": "V_String",
-								"params": ["29,17"]
-							}, {
-								"id": "V_String",
-								"params": ["33,17"]
-							}, {
-								"id": "V_String",
-								"params": ["33,21"]
-							} ] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [ { "cx": 29, "cy": 17 }, { "cx": 33, "cy": 17 }, { "cx": 33, "cy": 21 } ], "__tile": null, "defUid": 128, "realEditorValues": [ {
+									"id": "V_String",
+									"params": ["29,17"]
+								}, {
+									"id": "V_String",
+									"params": ["33,17"]
+								}, {
+									"id": "V_String",
+									"params": ["33,21"]
+								} ] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1496,
 							"__worldY": -1728
 						},
@@ -11806,10 +12080,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [584,320],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 43, "cy": 19 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["43,19"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 43, "cy": 19 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["43,19"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1608,
 							"__worldY": -1760
 						},
@@ -11825,10 +12102,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [744,320],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 46, "cy": 6 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["46,6"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 46, "cy": 6 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["46,6"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1768,
 							"__worldY": -1760
 						},
@@ -11844,10 +12124,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [440,160],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 20, "cy": 9 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["20,9"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 20, "cy": 9 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["20,9"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1464,
 							"__worldY": -1920
 						},
@@ -11863,10 +12146,13 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [296,160],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 13, "cy": 9 }], "__tile": null, "defUid": 128, "realEditorValues": [{
-								"id": "V_String",
-								"params": ["13,9"]
-							}] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 13, "cy": 9 }], "__tile": null, "defUid": 128, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["13,9"]
+								}] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1320,
 							"__worldY": -1920
 						},
@@ -11882,21 +12168,66 @@
 							"height": 16,
 							"defUid": 127,
 							"px": [152,160],
-							"fieldInstances": [{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [ { "cx": 9, "cy": 16 }, { "cx": 7, "cy": 18 }, { "cx": 4, "cy": 16 }, { "cx": 4, "cy": 5 } ], "__tile": null, "defUid": 128, "realEditorValues": [ {
-								"id": "V_String",
-								"params": ["9,16"]
-							}, {
-								"id": "V_String",
-								"params": ["7,18"]
-							}, {
-								"id": "V_String",
-								"params": ["4,16"]
-							}, {
-								"id": "V_String",
-								"params": ["4,5"]
-							} ] }],
+							"fieldInstances": [
+								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [ { "cx": 9, "cy": 16 }, { "cx": 7, "cy": 18 }, { "cx": 4, "cy": 16 }, { "cx": 4, "cy": 5 } ], "__tile": null, "defUid": 128, "realEditorValues": [ {
+									"id": "V_String",
+									"params": ["9,16"]
+								}, {
+									"id": "V_String",
+									"params": ["7,18"]
+								}, {
+									"id": "V_String",
+									"params": ["4,16"]
+								}, {
+									"id": "V_String",
+									"params": ["4,5"]
+								} ] },
+								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+							],
 							"__worldX": 1176,
 							"__worldY": -1920
+						}
+					]
+				},
+				{
+					"__identifier": "Meta_Entities",
+					"__type": "Entities",
+					"__cWid": 62,
+					"__cHei": 34,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": null,
+					"__tilesetRelPath": null,
+					"iid": "337bc771-e920-11ef-b4b2-c3880913c2ae",
+					"levelId": 135,
+					"layerDefUid": 137,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [],
+					"autoLayerTiles": [],
+					"seed": 5284507,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": [
+						{
+							"__identifier": "Player_Respawn",
+							"__grid": [14,31],
+							"__pivot": [0.5,1],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#F3EFEC",
+							"iid": "655b1cf0-e920-11ef-b4b2-ff2fb9202987",
+							"width": 16,
+							"height": 16,
+							"defUid": 138,
+							"px": [232,512],
+							"fieldInstances": [],
+							"__worldX": 1256,
+							"__worldY": -1568
 						}
 					]
 				},
@@ -14169,6 +14500,48 @@
 					"overrideTilesetUid": null,
 					"gridTiles": [],
 					"entityInstances": []
+				},
+				{
+					"__identifier": "Meta_Entities",
+					"__type": "Entities",
+					"__cWid": 68,
+					"__cHei": 112,
+					"__gridSize": 16,
+					"__opacity": 1,
+					"__pxTotalOffsetX": 0,
+					"__pxTotalOffsetY": 0,
+					"__tilesetDefUid": null,
+					"__tilesetRelPath": null,
+					"iid": "337bee80-e920-11ef-b4b2-f7115bbf7f50",
+					"levelId": 136,
+					"layerDefUid": 137,
+					"pxOffsetX": 0,
+					"pxOffsetY": 0,
+					"visible": true,
+					"optionalRules": [],
+					"intGridCsv": [],
+					"autoLayerTiles": [],
+					"seed": 5905491,
+					"overrideTilesetUid": null,
+					"gridTiles": [],
+					"entityInstances": [
+						{
+							"__identifier": "Player_Respawn",
+							"__grid": [65,4],
+							"__pivot": [0.5,1],
+							"__tags": [],
+							"__tile": null,
+							"__smartColor": "#F3EFEC",
+							"iid": "635e6290-e920-11ef-b4b2-f1a578f5d1ca",
+							"width": 16,
+							"height": 16,
+							"defUid": 138,
+							"px": [1048,80],
+							"fieldInstances": [],
+							"__worldX": 984,
+							"__worldY": -2000
+						}
+					]
 				},
 				{
 					"__identifier": "Collisions_AutoLayer",
