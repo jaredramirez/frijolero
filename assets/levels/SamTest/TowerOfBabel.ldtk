@@ -1905,7 +1905,24 @@
 					"seed": 1986881,
 					"overrideTilesetUid": null,
 					"gridTiles": [],
-					"entityInstances": []
+					"entityInstances": [
+						{
+							"__identifier": "Player",
+							"__grid": [7,28],
+							"__pivot": [0.5,1],
+							"__tags": [],
+							"__tile": { "tilesetUid": 118, "x": 0, "y": 192, "w": 16, "h": 16 },
+							"__smartColor": "#733E39",
+							"iid": "ae285540-e920-11ef-aa5d-73ca8c160275",
+							"width": 16,
+							"height": 16,
+							"defUid": 11,
+							"px": [120,464],
+							"fieldInstances": [{ "__identifier": "items", "__type": "Array<LocalEnum.Item>", "__value": [], "__tile": null, "defUid": 92, "realEditorValues": [] }],
+							"__worldX": 56,
+							"__worldY": 176
+						}
+					]
 				},
 				{
 					"__identifier": "Meta_Entities",
@@ -4375,7 +4392,7 @@
 									"id": "V_String",
 									"params": ["32,61"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 150, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [150] }] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 100, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [100] }] }
 							],
 							"__worldX": 1304,
 							"__worldY": 144
@@ -4397,7 +4414,7 @@
 									"id": "V_String",
 									"params": ["52,39"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 100, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [100] }] }
 							],
 							"__worldX": 1864,
 							"__worldY": -16
@@ -4419,7 +4436,7 @@
 									"id": "V_String",
 									"params": ["8,39"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 75, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [75] }] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 100, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [100] }] }
 							],
 							"__worldX": 1400,
 							"__worldY": -208
@@ -4441,7 +4458,7 @@
 									"id": "V_String",
 									"params": ["4,15"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 100, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [100] }] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 120, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [120] }] }
 							],
 							"__worldX": 1096,
 							"__worldY": -176
@@ -4463,7 +4480,7 @@
 									"id": "V_String",
 									"params": ["11,18"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 75, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [75] }] }
 							],
 							"__worldX": 1144,
 							"__worldY": -544
@@ -4485,26 +4502,10 @@
 									"id": "V_String",
 									"params": ["28,7"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 90, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [90] }] }
 							],
 							"__worldX": 1256,
 							"__worldY": -496
-						},
-						{
-							"__identifier": "Player",
-							"__grid": [30,10],
-							"__pivot": [0.5,1],
-							"__tags": [],
-							"__tile": { "tilesetUid": 118, "x": 0, "y": 192, "w": 16, "h": 16 },
-							"__smartColor": "#733E39",
-							"iid": "c1db2020-e920-11ef-9659-af9163e4b85a",
-							"width": 16,
-							"height": 16,
-							"defUid": 11,
-							"px": [488,176],
-							"fieldInstances": [{ "__identifier": "items", "__type": "Array<LocalEnum.Item>", "__value": [], "__tile": null, "defUid": 92, "realEditorValues": [] }],
-							"__worldX": 1512,
-							"__worldY": -672
 						}
 					]
 				},
@@ -8989,7 +8990,7 @@
 					"entityInstances": [
 						{
 							"__identifier": "Platform",
-							"__grid": [52,34],
+							"__grid": [54,34],
 							"__pivot": [0.5,1],
 							"__tags": [],
 							"__tile": { "tilesetUid": 7, "x": 144, "y": 0, "w": 16, "h": 16 },
@@ -8998,15 +8999,15 @@
 							"width": 32,
 							"height": 16,
 							"defUid": 127,
-							"px": [840,560],
+							"px": [872,560],
 							"fieldInstances": [
 								{ "__identifier": "patrol", "__type": "Array<Point>", "__value": [{ "cx": 39, "cy": 34 }], "__tile": null, "defUid": 128, "realEditorValues": [{
 									"id": "V_String",
 									"params": ["39,34"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 85, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [85] }] }
 							],
-							"__worldX": 1864,
+							"__worldX": 1896,
 							"__worldY": -976
 						},
 						{
@@ -9026,7 +9027,7 @@
 									"id": "V_String",
 									"params": ["7,38"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 100, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [100] }] }
 							],
 							"__worldX": 1512,
 							"__worldY": -912
@@ -9048,7 +9049,7 @@
 									"id": "V_String",
 									"params": ["19,20"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 75, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [75] }] }
 							],
 							"__worldX": 1112,
 							"__worldY": -1040
@@ -9070,7 +9071,7 @@
 									"id": "V_String",
 									"params": ["55,7"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 75, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [75] }] }
 							],
 							"__worldX": 1912,
 							"__worldY": -1120
@@ -12007,7 +12008,7 @@
 									"id": "V_String",
 									"params": ["21,29"]
 								} ] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 100, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [100] }] }
 							],
 							"__worldX": 1304,
 							"__worldY": -1600
@@ -12035,7 +12036,7 @@
 									"id": "V_String",
 									"params": ["27,25"]
 								} ] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 75, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [75] }] }
 							],
 							"__worldX": 1400,
 							"__worldY": -1664
@@ -12063,7 +12064,7 @@
 									"id": "V_String",
 									"params": ["33,21"]
 								} ] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 100, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [100] }] }
 							],
 							"__worldX": 1496,
 							"__worldY": -1728
@@ -12085,7 +12086,7 @@
 									"id": "V_String",
 									"params": ["43,19"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 75, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [75] }] }
 							],
 							"__worldX": 1608,
 							"__worldY": -1760
@@ -12107,7 +12108,7 @@
 									"id": "V_String",
 									"params": ["46,6"]
 								}] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 100, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [100] }] }
 							],
 							"__worldX": 1768,
 							"__worldY": -1760
@@ -12182,7 +12183,7 @@
 									"id": "V_String",
 									"params": ["4,5"]
 								} ] },
-								{ "__identifier": "speed", "__type": "Int", "__value": 50, "__tile": null, "defUid": 139, "realEditorValues": [] }
+								{ "__identifier": "speed", "__type": "Int", "__value": 150, "__tile": null, "defUid": 139, "realEditorValues": [{ "id": "V_Int", "params": [150] }] }
 							],
 							"__worldX": 1176,
 							"__worldY": -1920
