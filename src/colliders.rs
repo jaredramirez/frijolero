@@ -50,17 +50,6 @@ impl From<&EntityInstance> for ColliderBundle {
                 rotation_constraints,
                 ..Default::default()
             },
-            "Spike" => ColliderBundle {
-                collider: Collider::compound(vec![(
-                    Vect::new(0., -3.),
-                    0.,
-                    Collider::cuboid(8., 5.),
-                )]),
-                rigid_body: RigidBody::KinematicVelocityBased,
-                friction: Friction::new(1.0),
-                rotation_constraints,
-                ..Default::default()
-            },
             "Player_Respawn" => ColliderBundle {
                 collider: Collider::cuboid(8., 8.),
                 rigid_body: RigidBody::KinematicVelocityBased,
@@ -68,7 +57,13 @@ impl From<&EntityInstance> for ColliderBundle {
                 rotation_constraints,
                 ..Default::default()
             },
-            _ => ColliderBundle::default(),
+            entity_id => {
+                warn!(
+                    "Unexpected entity when creating ColliderBundle {}",
+                    entity_id
+                );
+                ColliderBundle::default()
+            }
         }
     }
 }
@@ -84,17 +79,26 @@ pub struct SensorBundle {
 impl From<IntGridCell> for SensorBundle {
     fn from(int_grid_cell: IntGridCell) -> SensorBundle {
         let rotation_constraints = LockedAxes::ROTATION_LOCKED;
-
-        // ladder
-        if int_grid_cell.value == 4 {
-            SensorBundle {
+        match int_grid_cell.value {
+            // ladder
+            4 => SensorBundle {
                 collider: Collider::cuboid(8., 8.),
                 sensor: Sensor,
                 rotation_constraints,
                 active_events: ActiveEvents::COLLISION_EVENTS,
-            }
-        } else {
-            SensorBundle::default()
+            },
+            // spike
+            5 => SensorBundle {
+                collider: Collider::compound(vec![(
+                    Vect::new(0., -3.),
+                    0.,
+                    Collider::cuboid(8., 5.),
+                )]),
+                sensor: Sensor,
+                rotation_constraints,
+                active_events: ActiveEvents::COLLISION_EVENTS,
+            },
+            _ => SensorBundle::default(),
         }
     }
 }

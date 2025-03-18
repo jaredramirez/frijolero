@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use shape_views::CuboidView;
 use std::{collections::HashSet, time::Duration};
 
 use crate::timer_helpers::TimerHelper;

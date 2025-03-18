@@ -6,6 +6,7 @@ use bevy_rapier2d::dynamics::Velocity;
 use leafwing_input_manager::prelude::*;
 
 use crate::game_flow::{RespawnLevelEvent, RespawnWorldEvent};
+use crate::spike::SpikeDetection;
 use crate::timer_helpers::TimerHelper;
 use crate::{
     actions::PlatformerAction,
@@ -27,9 +28,11 @@ pub struct PlayerBundle {
     pub player: Player,
     pub climber: Climber,
     pub jumper: Jumper,
-    pub ground_detection: GroundDetection,
     pub coyote_timer: CoyoteTimer,
     pub jump_buffer_timer: JumpBufferTimer,
+
+    pub ground_detection: GroundDetection,
+    pub spike_detection: SpikeDetection,
 
     #[sprite_sheet("player.png", 16, 16, 7, 1, 0, 0, 0)]
     pub sprite: Sprite,
@@ -260,9 +263,9 @@ fn handle_game_actions(
     query: Query<&ActionState<PlatformerAction>, With<Player>>,
 ) {
     for action in query.iter() {
-        if action.pressed(&PlatformerAction::RespawnLevel) {
+        if action.just_pressed(&PlatformerAction::RespawnLevel) {
             level_respawn_event.send(RespawnLevelEvent::RespawnLevelEvent);
-        } else if action.pressed(&PlatformerAction::RespawnWorld) {
+        } else if action.just_pressed(&PlatformerAction::RespawnWorld) {
             world_respawn_event.send(RespawnWorldEvent::RespawnWorldEvent);
         }
     }
