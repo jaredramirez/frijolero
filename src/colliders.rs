@@ -24,6 +24,10 @@ impl From<&EntityInstance> for ColliderBundle {
                     (Vect::new(0., -4.), 0., Collider::cuboid(6., 4.)),
                 ]),
                 rigid_body: RigidBody::Dynamic,
+                friction: Friction {
+                    coefficient: 0.0,
+                    combine_rule: CoefficientCombineRule::Min,
+                },
                 rotation_constraints,
                 ..Default::default()
             },
@@ -47,7 +51,11 @@ impl From<&EntityInstance> for ColliderBundle {
                 ..Default::default()
             },
             "Spike" => ColliderBundle {
-                collider: Collider::cuboid(8., 4.),
+                collider: Collider::compound(vec![(
+                    Vect::new(0., -3.),
+                    0.,
+                    Collider::cuboid(8., 5.),
+                )]),
                 rigid_body: RigidBody::KinematicVelocityBased,
                 friction: Friction::new(1.0),
                 rotation_constraints,

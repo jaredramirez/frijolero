@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
+use bevy_rapier2d::prelude::{ActiveEvents, Sensor};
 
 use crate::colliders::ColliderBundle;
 
@@ -13,7 +14,11 @@ pub struct SpikeBundle {
     pub sprite_sheet: Sprite,
     #[from_entity_instance]
     pub collider_bundle: ColliderBundle,
+    pub sensor: Sensor,
+    pub active_events: ActiveEvents,
 }
+
+// TODO Emit respawn event on spike interscetion
 
 pub struct SpikePlugin;
 

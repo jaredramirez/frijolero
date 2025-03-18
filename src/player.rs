@@ -5,6 +5,7 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::dynamics::Velocity;
 use leafwing_input_manager::prelude::*;
 
+use crate::game_flow::{RespawnLevelEvent, RespawnWorldEvent};
 use crate::timer_helpers::TimerHelper;
 use crate::{
     actions::PlatformerAction,
@@ -237,16 +238,33 @@ fn setup_player_actions(mut commands: Commands, mut query: Query<Entity, Added<P
         return;
     }
     let player_ent = query.single_mut();
-    dbg!("player_ent", player_ent);
     if let Some(mut ent_cmds) = commands.get_entity(player_ent) {
-        let input_map = InputMap::new([
+        let player_input_map = InputMap::new([
             (PlatformerAction::Jump, KeyCode::Space),
             (PlatformerAction::Right, KeyCode::ArrowRight),
             (PlatformerAction::Left, KeyCode::ArrowLeft),
             (PlatformerAction::Up, KeyCode::ArrowUp),
             (PlatformerAction::Down, KeyCode::ArrowDown),
+            (PlatformerAction::Down, KeyCode::ArrowDown),
+            (PlatformerAction::RespawnLevel, KeyCode::KeyR),
+            (PlatformerAction::RespawnWorld, KeyCode::KeyG),
         ]);
-        ent_cmds.insert(InputManagerBundle::with_map(input_map));
+        ent_cmds.insert(InputManagerBundle::with_map(player_input_map));
+    }
+}
+
+/// configure the keys -> action mapping  for the player
+fn handle_game_actions(
+    mut level_respawn_event: EventWriter<RespawnLevelEvent>,
+    mut world_respawn_event: EventWriter<RespawnWorldEvent>,
+    query: Query<&ActionState<PlatformerAction>, With<Player>>,
+) {
+    for action in query.iter() {
+        if action.pressed(&PlatformerAction::RespawnLevel) {
+            level_respawn_event.send(RespawnLevelEvent::RespawnLevelEvent);
+        } else if action.pressed(&PlatformerAction::RespawnWorld) {
+            world_respawn_event.send(RespawnWorldEvent::RespawnWorldEvent);
+        }
     }
 }
 
@@ -444,7 +462,12 @@ impl Plugin for PlayerPlugin {
             .add_systems(
                 Update,
                 // player movement systems
-                (setup_player_actions, player_movement, tick_jump_buffer),
+                (
+                    setup_player_actions,
+                    handle_game_actions,
+                    player_movement,
+                    tick_jump_buffer,
+                ),
             )
             .add_systems(
                 Update,

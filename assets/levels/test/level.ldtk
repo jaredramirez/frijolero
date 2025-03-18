@@ -1509,7 +1509,7 @@
 			"renderMode": "Tile",
 			"showName": true,
 			"tilesetId": 118,
-			"tileRenderMode": "FullSizeUncropped",
+			"tileRenderMode": "Cover",
 			"tileRect": { "tilesetUid": 118, "x": 0, "y": 192, "w": 16, "h": 16 },
 			"uiTileRect": null,
 			"nineSliceBorders": [],
@@ -1939,22 +1939,6 @@
 					"gridTiles": [],
 					"entityInstances": [
 						{
-							"__identifier": "Player",
-							"__grid": [15,10],
-							"__pivot": [0.5,1],
-							"__tags": [],
-							"__tile": { "tilesetUid": 118, "x": 0, "y": 192, "w": 16, "h": 16 },
-							"__smartColor": "#733E39",
-							"iid": "7aa85af0-e920-11ef-abdf-3979dbef33eb",
-							"width": 16,
-							"height": 16,
-							"defUid": 11,
-							"px": [248,176],
-							"fieldInstances": [{ "__identifier": "items", "__type": "Array<LocalEnum.Item>", "__value": [], "__tile": null, "defUid": 92, "realEditorValues": [] }],
-							"__worldX": 248,
-							"__worldY": 128
-						},
-						{
 							"__identifier": "Spike",
 							"__grid": [13,11],
 							"__pivot": [0.5,1],
@@ -1969,6 +1953,38 @@
 							"fieldInstances": [],
 							"__worldX": 216,
 							"__worldY": 144
+						},
+						{
+							"__identifier": "Spike",
+							"__grid": [10,10],
+							"__pivot": [0.5,1],
+							"__tags": [],
+							"__tile": { "tilesetUid": 118, "x": 48, "y": 144, "w": 16, "h": 16 },
+							"__smartColor": "#733E39",
+							"iid": "a303c150-e920-11ef-818b-173f34877b2c",
+							"width": 16,
+							"height": 16,
+							"defUid": 141,
+							"px": [168,176],
+							"fieldInstances": [],
+							"__worldX": 168,
+							"__worldY": 128
+						},
+						{
+							"__identifier": "Player",
+							"__grid": [15,10],
+							"__pivot": [0.5,1],
+							"__tags": [],
+							"__tile": { "tilesetUid": 118, "x": 0, "y": 192, "w": 16, "h": 16 },
+							"__smartColor": "#733E39",
+							"iid": "2fb82a00-e920-11ef-b35e-6fc320687972",
+							"width": 16,
+							"height": 16,
+							"defUid": 11,
+							"px": [248,176],
+							"fieldInstances": [{ "__identifier": "items", "__type": "Array<LocalEnum.Item>", "__value": [], "__tile": null, "defUid": 92, "realEditorValues": [] }],
+							"__worldX": 248,
+							"__worldY": 128
 						}
 					]
 				},
@@ -1998,19 +2014,19 @@
 					"entityInstances": [
 						{
 							"__identifier": "Player_Respawn",
-							"__grid": [15,11],
+							"__grid": [15,10],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
 							"__tile": null,
 							"__smartColor": "#C0CBDC",
-							"iid": "7732bc30-e920-11ef-abdf-77667103d8f2",
+							"iid": "357d3700-e920-11ef-b35e-05c365189fc7",
 							"width": 16,
 							"height": 16,
 							"defUid": 133,
-							"px": [248,176],
+							"px": [248,168],
 							"fieldInstances": [],
 							"__worldX": 248,
-							"__worldY": 128
+							"__worldY": 120
 						}
 					]
 				},

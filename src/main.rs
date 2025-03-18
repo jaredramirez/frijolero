@@ -55,6 +55,8 @@ fn main() {
             set_clear_color: SetClearColor::FromLevelBackground,
             ..Default::default()
         })
+        .add_event::<game_flow::RespawnWorldEvent>()
+        .add_event::<game_flow::RespawnLevelEvent>()
         .add_plugins(game_flow::GameFlowPlugin)
         .add_plugins(player::PlayerPlugin)
         .add_plugins(ground_detection::GroundDetectionPlugin)
