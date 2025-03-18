@@ -9,11 +9,11 @@ pub struct Platform;
 
 #[derive(Clone, Default, Bundle, LdtkEntity)]
 pub struct PlatformBundle {
+    pub platform: Platform,
     #[sprite_sheet]
     pub sprite_sheet: Sprite,
     #[from_entity_instance]
     pub collider_bundle: ColliderBundle,
-    pub platform: Platform,
     #[ldtk_entity]
     pub patrol: Patrol,
 }

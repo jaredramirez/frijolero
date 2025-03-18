@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use shape_views::CuboidView;
 use std::{collections::HashSet, time::Duration};
 
 use crate::timer_helpers::TimerHelper;
@@ -47,13 +48,35 @@ pub fn spawn_ground_sensor(
     detect_ground_for: Query<(Entity, &Collider), Added<GroundDetection>>,
 ) {
     for (entity, shape) in &detect_ground_for {
-        if let Some(cuboid) = shape.as_cuboid() {
+        // First, we get the collider cuboid shape
+        let opt_cuboid_half_extents = if let Some(cuboid) = shape.as_cuboid() {
+            // If the shape is a cuboid, then easy
+            Some((cuboid.half_extents(), 0.))
+        } else if let Some(compound) = shape.as_compound() {
+            // If this is a compound shape, get the cuboid with the lowest y val
+            let mut lowest_y = f32::MAX;
+            let mut opt_selected = None;
+            for (cur_pos, _rot, col) in compound.shapes() {
+                if let ColliderView::Cuboid(cur_cuboid) = col {
+                    if cur_pos.y < lowest_y {
+                        opt_selected = Some((cur_cuboid.half_extents(), cur_pos.y));
+                        lowest_y = cur_pos.y;
+                    }
+                }
+            }
+            opt_selected
+        } else {
+            None
+        };
+
+        // Insert a sensor collider at the bottom of the regulare colliaed
+        if let Some((cuboid_half_extents, y_offset)) = opt_cuboid_half_extents {
             let Vec2 {
                 x: half_extents_x,
                 y: half_extents_y,
-            } = cuboid.half_extents();
+            } = cuboid_half_extents;
             let detector_shape = Collider::cuboid(half_extents_x / 2.0, 2.);
-            let sensor_translation = Vec3::new(0., -half_extents_y, 0.);
+            let sensor_translation = Vec3::new(0., -half_extents_y + y_offset, 0.);
             commands.entity(entity).with_children(|builder| {
                 builder
                     .spawn_empty()
