@@ -19,6 +19,7 @@ mod misc_objects;
 mod obstacle;
 mod platform;
 mod player;
+mod spike;
 mod timer_helpers;
 mod walls;
 
@@ -62,6 +63,7 @@ fn main() {
         .add_plugins(enemy::EnemyPlugin)
         .add_plugins(obstacle::ObstaclePlugin)
         .add_plugins(platform::PlatformPlugin)
+        .add_plugins(spike::SpikePlugin)
         .add_plugins(misc_objects::MiscObjectsPlugin)
         .add_systems(Update, inventory::dbg_print_inventory)
         .add_systems(Update, camera::camera_fit_inside_current_level)
