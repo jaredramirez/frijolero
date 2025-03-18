@@ -58,7 +58,6 @@ pub fn spawn_ground_sensor(
             let mut opt_selected = None;
             for (cur_pos, _rot, col) in compound.shapes() {
                 if let ColliderView::Cuboid(cur_cuboid) = col {
-                    dbg!(cur_pos.y, lowest_y);
                     if cur_pos.y < lowest_y {
                         opt_selected = Some((cur_cuboid.half_extents(), cur_pos.y));
                         lowest_y = cur_pos.y;
