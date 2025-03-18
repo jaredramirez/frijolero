@@ -19,12 +19,11 @@ impl From<&EntityInstance> for ColliderBundle {
 
         match entity_instance.identifier.as_ref() {
             "Player" => ColliderBundle {
-                collider: Collider::cuboid(6., 9.),
+                collider: Collider::compound(vec![
+                    (Vect::new(0., 2.), 0., Collider::cuboid(6., 2.)),
+                    (Vect::new(0., -4.), 0., Collider::cuboid(6., 4.)),
+                ]),
                 rigid_body: RigidBody::Dynamic,
-                friction: Friction {
-                    coefficient: 0.0,
-                    combine_rule: CoefficientCombineRule::Min,
-                },
                 rotation_constraints,
                 ..Default::default()
             },
@@ -42,6 +41,13 @@ impl From<&EntityInstance> for ColliderBundle {
             },
             "Platform" => ColliderBundle {
                 collider: Collider::cuboid(8., 8.),
+                rigid_body: RigidBody::KinematicVelocityBased,
+                friction: Friction::new(1.0),
+                rotation_constraints,
+                ..Default::default()
+            },
+            "Spike" => ColliderBundle {
+                collider: Collider::cuboid(8., 4.),
                 rigid_body: RigidBody::KinematicVelocityBased,
                 friction: Friction::new(1.0),
                 rotation_constraints,
