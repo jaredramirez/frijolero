@@ -3,6 +3,8 @@ use std::{env, path::Path};
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
+use bevy_tnua::prelude::TnuaControllerPlugin;
+use bevy_tnua_rapier2d::TnuaRapier2dPlugin;
 use game_flow::GameFile;
 use leafwing_input_manager::prelude::*;
 
@@ -39,6 +41,8 @@ fn main() {
                     ..Default::default()
                 }),
         )
+        .add_plugins(TnuaControllerPlugin::default())
+        .add_plugins(TnuaRapier2dPlugin::default())
         .add_plugins(InputManagerPlugin::<actions::PlatformerAction>::default())
         .add_plugins((
             LdtkPlugin,

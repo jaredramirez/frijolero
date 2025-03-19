@@ -3,6 +3,11 @@ use std::{ops::DerefMut, time::Duration};
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::dynamics::Velocity;
+use bevy_rapier2d::prelude::Collider;
+use bevy_tnua::math::{AsF32, Vector3};
+use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
+use bevy_tnua_rapier2d::TnuaRapier2dIOBundle;
+use bevy_tnua_rapier2d::TnuaRapier2dSensorShape;
 use leafwing_input_manager::prelude::*;
 
 use crate::game_flow::{RespawnLevelEvent, RespawnWorldEvent};
@@ -23,7 +28,7 @@ use crate::{
 pub struct Player;
 
 /// player bundle, containing everything needed
-#[derive(Clone, Default, Bundle, LdtkEntity)]
+#[derive(Default, Bundle, LdtkEntity)]
 pub struct PlayerBundle {
     pub player: Player,
     pub climber: Climber,
@@ -31,7 +36,7 @@ pub struct PlayerBundle {
     pub coyote_timer: CoyoteTimer,
     pub jump_buffer_timer: JumpBufferTimer,
 
-    pub ground_detection: GroundDetection,
+    // pub ground_detection: GroundDetection,
     pub spike_detection: SpikeDetection,
 
     #[sprite_sheet("player.png", 16, 16, 7, 1, 0, 0, 0)]
@@ -59,6 +64,51 @@ pub struct PlayerBundle {
 const JUMP_VELOCITY: f32 = 400.;
 const RUN_VELOCITY: f32 = 150.;
 const CLIMB_VELOCITY: f32 = 150.;
+
+const WALK_VELOCITY: f32 = 5000.;
+
+pub fn player_movement2(
+    mut player_query: Query<
+        (Entity, &ActionState<PlatformerAction>, &mut TnuaController),
+        With<Player>,
+    >,
+) {
+    for (ent, action, mut tnua_controller) in &mut player_query {
+        let mut direction = Vector3::ZERO;
+
+        // see if the player just pressed right/left
+        let pressed_left = action.pressed(&PlatformerAction::Left);
+        if pressed_left {
+            direction -= Vector3::X;
+        }
+
+        let pressed_right = action.pressed(&PlatformerAction::Right);
+        if pressed_right {
+            direction += Vector3::X;
+        }
+
+        direction = direction.clamp_length_max(1.0);
+
+        tnua_controller.basis(TnuaBuiltinWalk {
+            desired_velocity: direction * 200.,
+            air_acceleration: 100.,
+            acceleration: 200.,
+            float_height: 7.0,
+            ..Default::default()
+        });
+
+        let pressed_jump = action.pressed(&PlatformerAction::Jump);
+        if pressed_jump {
+            tnua_controller.action(TnuaBuiltinJump {
+                // The full height of the jump, if the player does not release the button:
+                height: 30.0,
+
+                // TnuaBuiltinJump too has other fields that can be configured:
+                ..Default::default()
+            });
+        }
+    }
+}
 
 /// configure player movement
 pub fn player_movement(
@@ -236,12 +286,13 @@ pub fn player_movement(
 // ACTIONS
 
 /// configure the keys -> action mapping  for the player
-fn setup_player_actions(mut commands: Commands, mut query: Query<Entity, Added<Player>>) {
+fn setup_player(mut commands: Commands, mut query: Query<Entity, Added<Player>>) {
     if query.is_empty() {
         return;
     }
     let player_ent = query.single_mut();
     if let Some(mut ent_cmds) = commands.get_entity(player_ent) {
+        // Setup the player keymap
         let player_input_map = InputMap::new([
             (PlatformerAction::Jump, KeyCode::Space),
             (PlatformerAction::Right, KeyCode::ArrowRight),
@@ -253,6 +304,13 @@ fn setup_player_actions(mut commands: Commands, mut query: Query<Entity, Added<P
             (PlatformerAction::RespawnWorld, KeyCode::KeyG),
         ]);
         ent_cmds.insert(InputManagerBundle::with_map(player_input_map));
+
+        // Setup tnua
+        // This must happen after the collider is setup, so they can't be part
+        // of the bundle
+        ent_cmds.insert(TnuaRapier2dIOBundle::default());
+        ent_cmds.insert(TnuaController::default());
+        ent_cmds.insert(TnuaRapier2dSensorShape(Collider::cuboid(6., 2.)));
     }
 }
 
@@ -466,9 +524,10 @@ impl Plugin for PlayerPlugin {
                 Update,
                 // player movement systems
                 (
-                    setup_player_actions,
+                    setup_player,
                     handle_game_actions,
-                    player_movement,
+                    player_movement2,
+                    // player_movement,
                     tick_jump_buffer,
                 ),
             )
