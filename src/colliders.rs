@@ -25,7 +25,7 @@ impl From<&EntityInstance> for ColliderBundle {
                 ]),
                 rigid_body: RigidBody::Dynamic,
                 friction: Friction {
-                    coefficient: 0.0,
+                    coefficient: 1.0,
                     combine_rule: CoefficientCombineRule::Min,
                 },
                 rotation_constraints,
