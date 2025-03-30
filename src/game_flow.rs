@@ -80,15 +80,22 @@ pub fn update_level_selection(
     }
 }
 
+#[derive(Event)]
+pub enum RespawnWorldEvent {
+    RespawnWorldEvent,
+}
+
 /// Respawns the entire world for the currently selected ldtk gamefile
 fn respawn_world(
     mut commands: Commands,
     ldtk_projects: Query<Entity, With<LdtkProjectHandle>>,
-    input: Res<ButtonInput<KeyCode>>,
+    mut respawn_events: EventReader<RespawnWorldEvent>,
     game_file: Res<GameFile>,
     asset_server: Res<AssetServer>,
 ) {
-    if input.just_pressed(KeyCode::KeyG) {
+    if !respawn_events.is_empty() {
+        respawn_events.clear();
+
         commands.entity(ldtk_projects.single()).despawn_recursive();
 
         let ldtk_handle = asset_server
@@ -101,20 +108,27 @@ fn respawn_world(
     }
 }
 
+#[derive(Event, Debug)]
+pub enum RespawnLevelEvent {
+    RespawnLevelEvent,
+}
+
 /// Respawn the current level and move the player to that level's respawn point.
 /// If the level has not respawn point, do nothing
 fn respawn_level(
     mut commands: Commands,
     ldtk_projects: Query<&LdtkProjectHandle>,
     ldtk_project_assets: Res<Assets<LdtkProject>>,
-    input: Res<ButtonInput<KeyCode>>,
+    mut respawn_events: EventReader<RespawnLevelEvent>,
 
     level_selection: Res<LevelSelection>,
     levels: Query<(Entity, &LevelIid)>,
     player_respawns: Query<(&PlayerRespawn, &Transform), Without<Player>>,
     mut players: Query<&mut Transform, (With<Player>, Without<PlayerRespawn>)>,
 ) {
-    if input.just_pressed(KeyCode::KeyR) {
+    if !respawn_events.is_empty() {
+        respawn_events.clear();
+
         // First, we have to find the level entity for the selected level
         if let LevelSelection::Iid(level_selection_iid) = level_selection.as_ref() {
             for (level_ent, level_iid) in levels.iter() {
@@ -202,6 +216,8 @@ impl Plugin for GameFlowPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup)
             .register_ldtk_entity::<PlayerRespawnBundle>("Player_Respawn")
+            .add_event::<RespawnWorldEvent>()
+            .add_event::<RespawnLevelEvent>()
             .add_systems(Update, update_level_selection)
             .add_systems(Update, (respawn_world, respawn_level));
     }

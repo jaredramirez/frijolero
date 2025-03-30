@@ -5,6 +5,8 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::dynamics::Velocity;
 use leafwing_input_manager::prelude::*;
 
+use crate::game_flow::{RespawnLevelEvent, RespawnWorldEvent};
+use crate::spike::SpikeDetection;
 use crate::timer_helpers::TimerHelper;
 use crate::{
     actions::PlatformerAction,
@@ -23,18 +25,23 @@ pub struct Player;
 /// player bundle, containing everything needed
 #[derive(Clone, Default, Bundle, LdtkEntity)]
 pub struct PlayerBundle {
-    #[sprite_sheet("player.png", 16, 16, 7, 1, 0, 0, 0)]
-    pub sprite: Sprite,
-    #[from_entity_instance]
-    pub collider_bundle: ColliderBundle,
     pub player: Player,
-    #[worldly]
-    pub worldly: Worldly,
     pub climber: Climber,
     pub jumper: Jumper,
-    pub ground_detection: GroundDetection,
     pub coyote_timer: CoyoteTimer,
     pub jump_buffer_timer: JumpBufferTimer,
+
+    pub ground_detection: GroundDetection,
+    pub spike_detection: SpikeDetection,
+
+    #[sprite_sheet("player.png", 16, 16, 7, 1, 0, 0, 0)]
+    pub sprite: Sprite,
+
+    #[worldly]
+    pub worldly: Worldly,
+
+    #[from_entity_instance]
+    pub collider_bundle: ColliderBundle,
 
     // Build Items Component manually by using `impl From<&EntityInstance>`
     #[from_entity_instance]
@@ -108,10 +115,14 @@ pub fn player_movement(
         // set x velocity
         if pressed_right && !pressed_left {
             velocity.linvel.x = base_x_vel + RUN_VELOCITY;
-            animation_event.send(AnimationEvent::running(ent, RunningDirection::Right));
+            if !jumper.is_jumping() {
+                animation_event.send(AnimationEvent::running(ent, RunningDirection::Right));
+            }
         } else if pressed_left && !pressed_right {
             velocity.linvel.x = base_x_vel + -RUN_VELOCITY;
-            animation_event.send(AnimationEvent::running(ent, RunningDirection::Left));
+            if !jumper.is_jumping() {
+                animation_event.send(AnimationEvent::running(ent, RunningDirection::Left));
+            }
         } else {
             velocity.linvel.x = base_x_vel;
         }
@@ -231,14 +242,32 @@ fn setup_player_actions(mut commands: Commands, mut query: Query<Entity, Added<P
     }
     let player_ent = query.single_mut();
     if let Some(mut ent_cmds) = commands.get_entity(player_ent) {
-        let input_map = InputMap::new([
+        let player_input_map = InputMap::new([
             (PlatformerAction::Jump, KeyCode::Space),
             (PlatformerAction::Right, KeyCode::ArrowRight),
             (PlatformerAction::Left, KeyCode::ArrowLeft),
             (PlatformerAction::Up, KeyCode::ArrowUp),
             (PlatformerAction::Down, KeyCode::ArrowDown),
+            (PlatformerAction::Down, KeyCode::ArrowDown),
+            (PlatformerAction::RespawnLevel, KeyCode::KeyR),
+            (PlatformerAction::RespawnWorld, KeyCode::KeyG),
         ]);
-        ent_cmds.insert(InputManagerBundle::with_map(input_map));
+        ent_cmds.insert(InputManagerBundle::with_map(player_input_map));
+    }
+}
+
+/// configure the keys -> action mapping  for the player
+fn handle_game_actions(
+    mut level_respawn_event: EventWriter<RespawnLevelEvent>,
+    mut world_respawn_event: EventWriter<RespawnWorldEvent>,
+    query: Query<&ActionState<PlatformerAction>, With<Player>>,
+) {
+    for action in query.iter() {
+        if action.just_pressed(&PlatformerAction::RespawnLevel) {
+            level_respawn_event.send(RespawnLevelEvent::RespawnLevelEvent);
+        } else if action.just_pressed(&PlatformerAction::RespawnWorld) {
+            world_respawn_event.send(RespawnWorldEvent::RespawnWorldEvent);
+        }
     }
 }
 
@@ -354,13 +383,13 @@ fn recieve_animation_event(
 fn get_anmation_for_movement_event(event_type: &AnimationEventType) -> AnimationConfig {
     match event_type {
         AnimationEventType::Idling | AnimationEventType::Climbing(_) => {
-            AnimationConfig::new(0, vec![1, 2, 3, 4], 5, 3, TimerMode::Repeating, *event_type)
+            AnimationConfig::new(0, vec![1, 2], 3, 3, TimerMode::Repeating, *event_type)
         }
         AnimationEventType::Jumping => {
-            AnimationConfig::new(4, vec![], 4, 10, TimerMode::Once, *event_type)
+            AnimationConfig::new(2, vec![], 2, 10, TimerMode::Repeating, *event_type)
         }
         AnimationEventType::Running(_) => {
-            AnimationConfig::new(1, vec![2], 3, 15, TimerMode::Repeating, *event_type)
+            AnimationConfig::new(1, vec![2, 3], 4, 15, TimerMode::Repeating, *event_type)
         }
     }
 }
@@ -436,7 +465,12 @@ impl Plugin for PlayerPlugin {
             .add_systems(
                 Update,
                 // player movement systems
-                (setup_player_actions, player_movement, tick_jump_buffer),
+                (
+                    setup_player_actions,
+                    handle_game_actions,
+                    player_movement,
+                    tick_jump_buffer,
+                ),
             )
             .add_systems(
                 Update,

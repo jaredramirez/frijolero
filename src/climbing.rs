@@ -15,9 +15,9 @@ pub struct Climbable;
 
 #[derive(Clone, Default, Bundle, LdtkIntCell)]
 pub struct LadderBundle {
+    pub climbable: Climbable,
     #[from_int_grid_cell]
     pub sensor_bundle: SensorBundle,
-    pub climbable: Climbable,
 }
 
 pub fn detect_climb_range(
