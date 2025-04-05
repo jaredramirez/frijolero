@@ -91,8 +91,8 @@ pub fn player_movement2(
 
         tnua_controller.basis(TnuaBuiltinWalk {
             desired_velocity: direction * 200.,
-            air_acceleration: 100.,
-            acceleration: 200.,
+            air_acceleration: 700.,
+            acceleration: 800.,
             float_height: 7.0,
             ..Default::default()
         });
@@ -310,7 +310,7 @@ fn setup_player(mut commands: Commands, mut query: Query<Entity, Added<Player>>)
         // of the bundle
         ent_cmds.insert(TnuaRapier2dIOBundle::default());
         ent_cmds.insert(TnuaController::default());
-        ent_cmds.insert(TnuaRapier2dSensorShape(Collider::cuboid(6., 2.)));
+        ent_cmds.insert(TnuaRapier2dSensorShape(Collider::cuboid(5.75, 2.)));
     }
 }
 
