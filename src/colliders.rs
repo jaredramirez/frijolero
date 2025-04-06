@@ -13,48 +13,35 @@ pub struct ColliderBundle {
     pub density: ColliderMassProperties,
 }
 
+pub const ROTATION_CONSTRAINTS: LockedAxes = LockedAxes::ROTATION_LOCKED;
+
 impl From<&EntityInstance> for ColliderBundle {
     fn from(entity_instance: &EntityInstance) -> ColliderBundle {
-        let rotation_constraints = LockedAxes::ROTATION_LOCKED;
-
         match entity_instance.identifier.as_ref() {
-            "Player" => ColliderBundle {
-                collider: Collider::compound(vec![
-                    (Vect::new(0., 2.), 0., Collider::cuboid(6., 2.)),
-                    (Vect::new(0., -4.), 0., Collider::cuboid(6., 4.)),
-                ]),
-                rigid_body: RigidBody::Dynamic,
-                friction: Friction {
-                    coefficient: 0.,
-                    combine_rule: CoefficientCombineRule::Min,
-                },
-                rotation_constraints,
-                ..Default::default()
-            },
             "Obstacle" => ColliderBundle {
                 collider: Collider::cuboid(6., 6.),
                 rigid_body: RigidBody::KinematicVelocityBased,
-                rotation_constraints,
+                rotation_constraints: ROTATION_CONSTRAINTS,
                 ..Default::default()
             },
             "Mob" => ColliderBundle {
                 collider: Collider::cuboid(6., 6.),
                 rigid_body: RigidBody::KinematicVelocityBased,
-                rotation_constraints,
+                rotation_constraints: ROTATION_CONSTRAINTS,
                 ..Default::default()
             },
             "Platform" => ColliderBundle {
                 collider: Collider::cuboid(8., 8.),
                 rigid_body: RigidBody::KinematicVelocityBased,
                 friction: Friction::new(1.0),
-                rotation_constraints,
+                rotation_constraints: ROTATION_CONSTRAINTS,
                 ..Default::default()
             },
             "Player_Respawn" => ColliderBundle {
                 collider: Collider::cuboid(8., 8.),
                 rigid_body: RigidBody::KinematicVelocityBased,
                 friction: Friction::new(1.0),
-                rotation_constraints,
+                rotation_constraints: ROTATION_CONSTRAINTS,
                 ..Default::default()
             },
             entity_id => {
@@ -78,13 +65,12 @@ pub struct SensorBundle {
 
 impl From<IntGridCell> for SensorBundle {
     fn from(int_grid_cell: IntGridCell) -> SensorBundle {
-        let rotation_constraints = LockedAxes::ROTATION_LOCKED;
         match int_grid_cell.value {
             // ladder
             4 => SensorBundle {
                 collider: Collider::cuboid(8., 8.),
                 sensor: Sensor,
-                rotation_constraints,
+                rotation_constraints: ROTATION_CONSTRAINTS,
                 active_events: ActiveEvents::COLLISION_EVENTS,
             },
             // spike
@@ -95,7 +81,7 @@ impl From<IntGridCell> for SensorBundle {
                     Collider::cuboid(8., 5.),
                 )]),
                 sensor: Sensor,
-                rotation_constraints,
+                rotation_constraints: ROTATION_CONSTRAINTS,
                 active_events: ActiveEvents::COLLISION_EVENTS,
             },
             _ => SensorBundle::default(),

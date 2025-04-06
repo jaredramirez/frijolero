@@ -3,13 +3,15 @@ use std::{ops::DerefMut, time::Duration};
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::dynamics::Velocity;
-use bevy_rapier2d::prelude::Collider;
+use bevy_rapier2d::math::Vect;
+use bevy_rapier2d::prelude::{CoefficientCombineRule, Collider, Friction, RigidBody};
 use bevy_tnua::math::{AsF32, Vector3};
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
 use bevy_tnua_rapier2d::TnuaRapier2dIOBundle;
 use bevy_tnua_rapier2d::TnuaRapier2dSensorShape;
 use leafwing_input_manager::prelude::*;
 
+use crate::colliders::ROTATION_CONSTRAINTS;
 use crate::game_flow::{RespawnLevelEvent, RespawnWorldEvent};
 use crate::spike::SpikeDetection;
 use crate::timer_helpers::TimerHelper;
@@ -31,12 +33,7 @@ pub struct Player;
 #[derive(Default, Bundle, LdtkEntity)]
 pub struct PlayerBundle {
     pub player: Player,
-    pub climber: Climber,
-    pub jumper: Jumper,
-    pub coyote_timer: CoyoteTimer,
-    pub jump_buffer_timer: JumpBufferTimer,
 
-    // pub ground_detection: GroundDetection,
     pub spike_detection: SpikeDetection,
 
     #[sprite_sheet("player.png", 16, 16, 7, 1, 0, 0, 0)]
@@ -44,13 +41,6 @@ pub struct PlayerBundle {
 
     #[worldly]
     pub worldly: Worldly,
-
-    #[from_entity_instance]
-    pub collider_bundle: ColliderBundle,
-
-    // Build Items Component manually by using `impl From<&EntityInstance>`
-    #[from_entity_instance]
-    items: Inventory,
 
     // The whole EntityInstance can be stored directly as an EntityInstance component
     #[from_entity_instance]
@@ -91,9 +81,9 @@ pub fn player_movement2(
 
         tnua_controller.basis(TnuaBuiltinWalk {
             desired_velocity: direction * 200.,
-            air_acceleration: 700.,
+            air_acceleration: 800.,
             acceleration: 800.,
-            float_height: 7.0,
+            float_height: 4.8,
             ..Default::default()
         });
 
@@ -101,7 +91,7 @@ pub fn player_movement2(
         if pressed_jump {
             tnua_controller.action(TnuaBuiltinJump {
                 // The full height of the jump, if the player does not release the button:
-                height: 30.0,
+                height: 35.0,
 
                 // TnuaBuiltinJump too has other fields that can be configured:
                 ..Default::default()
@@ -299,18 +289,30 @@ fn setup_player(mut commands: Commands, mut query: Query<Entity, Added<Player>>)
             (PlatformerAction::Left, KeyCode::ArrowLeft),
             (PlatformerAction::Up, KeyCode::ArrowUp),
             (PlatformerAction::Down, KeyCode::ArrowDown),
-            (PlatformerAction::Down, KeyCode::ArrowDown),
             (PlatformerAction::RespawnLevel, KeyCode::KeyR),
             (PlatformerAction::RespawnWorld, KeyCode::KeyG),
         ]);
         ent_cmds.insert(InputManagerBundle::with_map(player_input_map));
 
+        // Setup collider
+        ent_cmds.insert(ColliderBundle {
+            collider: Collider::compound(vec![
+                (Vect::new(0., 2.), 0., Collider::cuboid(6., 2.)),
+                (Vect::new(0., -4.), 0., Collider::cuboid(6., 4.)),
+            ]),
+            rigid_body: RigidBody::Dynamic,
+            friction: Friction {
+                coefficient: 0.,
+                combine_rule: CoefficientCombineRule::Min,
+            },
+            rotation_constraints: ROTATION_CONSTRAINTS,
+            ..Default::default()
+        });
+
         // Setup tnua
-        // This must happen after the collider is setup, so they can't be part
-        // of the bundle
         ent_cmds.insert(TnuaRapier2dIOBundle::default());
         ent_cmds.insert(TnuaController::default());
-        ent_cmds.insert(TnuaRapier2dSensorShape(Collider::cuboid(5.75, 2.)));
+        ent_cmds.insert(TnuaRapier2dSensorShape(Collider::cuboid(5.75, 4.)));
     }
 }
 
