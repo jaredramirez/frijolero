@@ -5,8 +5,10 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::dynamics::Velocity;
 use bevy_rapier2d::math::Vect;
 use bevy_rapier2d::prelude::{CoefficientCombineRule, Collider, Friction, RigidBody};
+use bevy_tnua::builtins::TnuaBuiltinJumpState;
 use bevy_tnua::math::{AsF32, Vector3};
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
+use bevy_tnua::{TnuaAction, TnuaAnimatingState, TnuaAnimatingStateDirective};
 use bevy_tnua_rapier2d::TnuaRapier2dIOBundle;
 use bevy_tnua_rapier2d::TnuaRapier2dSensorShape;
 use leafwing_input_manager::prelude::*;
@@ -51,13 +53,7 @@ pub struct PlayerBundle {
 
 // movement constants
 
-const JUMP_VELOCITY: f32 = 400.;
-const RUN_VELOCITY: f32 = 150.;
-const CLIMB_VELOCITY: f32 = 150.;
-
-const WALK_VELOCITY: f32 = 5000.;
-
-pub fn player_movement2(
+pub fn player_movement(
     mut player_query: Query<
         (Entity, &ActionState<PlatformerAction>, &mut TnuaController),
         With<Player>,
@@ -96,179 +92,6 @@ pub fn player_movement2(
                 // TnuaBuiltinJump too has other fields that can be configured:
                 ..Default::default()
             });
-        }
-    }
-}
-
-/// configure player movement
-pub fn player_movement(
-    mut animation_event: EventWriter<AnimationEvent>,
-    platforms_query: Query<(Entity, &Velocity), (With<Platform>, Without<Player>)>,
-    mut player_query: Query<
-        (
-            Entity,
-            &ActionState<PlatformerAction>,
-            &mut Velocity,
-            &mut Climber,
-            &mut Jumper,
-            &mut CoyoteTimer,
-            &mut JumpBufferTimer,
-            &GroundDetection,
-        ),
-        (With<Player>, Without<Platform>),
-    >,
-) {
-    for (
-        ent,
-        action,
-        mut velocity,
-        mut climber,
-        mut jumper,
-        mut coyote_timer,
-        mut jump_buffer_timer,
-        ground_detection,
-    ) in &mut player_query
-    {
-        let on_ground = ground_detection.on_ground();
-
-        // if on a platform, get the platform's velocity
-        // this is the base velocity on top of any user input movement velocity
-        let (base_x_vel, base_y_vel) = match &ground_detection {
-            GroundDetection::OnGround(ground_ent) => {
-                let mut x_vel = 0.;
-                let mut y_vel = 0.;
-                if let Ok((_, platform_vel)) = platforms_query.get(*ground_ent) {
-                    x_vel = platform_vel.linvel.x;
-                    y_vel = platform_vel.linvel.y;
-                }
-                (x_vel, y_vel)
-            }
-            GroundDetection::NotOnGround => (0., 0.),
-        };
-
-        // handle running
-
-        // see if the player just pressed right/left
-        let pressed_right = action.pressed(&PlatformerAction::Right);
-        let pressed_left = action.pressed(&PlatformerAction::Left);
-
-        // set x velocity
-        if pressed_right && !pressed_left {
-            velocity.linvel.x = base_x_vel + RUN_VELOCITY;
-            if !jumper.is_jumping() {
-                animation_event.send(AnimationEvent::running(ent, RunningDirection::Right));
-            }
-        } else if pressed_left && !pressed_right {
-            velocity.linvel.x = base_x_vel + -RUN_VELOCITY;
-            if !jumper.is_jumping() {
-                animation_event.send(AnimationEvent::running(ent, RunningDirection::Left));
-            }
-        } else {
-            velocity.linvel.x = base_x_vel;
-        }
-
-        // handle climbing
-
-        // see if the player just pressed up/down
-        let just_pressed_up_or_down = action.just_pressed(&PlatformerAction::Up)
-            || action.just_pressed(&PlatformerAction::Down);
-
-        // set climbing state
-        if climber.intersecting_climbables.is_empty() {
-            // if the climber isn't intersecting a climbable, then we're def not
-            // climbing
-            climber.climbing = false;
-        } else if just_pressed_up_or_down {
-            // ^ implied && !climber.intersecting_climbables.is_empty()
-            // if the climber intersecting a climbable and just pressed up/down
-            // then we are climbing
-            climber.climbing = true;
-        }
-
-        // if we're climbing and we're pressing up/down, set out velocity
-        if climber.climbing {
-            let pressed_up = action.pressed(&PlatformerAction::Up);
-            let pressed_down = action.pressed(&PlatformerAction::Down);
-
-            if pressed_up && !pressed_down {
-                velocity.linvel.y = CLIMB_VELOCITY;
-                animation_event.send(AnimationEvent::climbing(ent, ClimbingDirection::Up));
-            } else if pressed_down && !pressed_up {
-                velocity.linvel.y = -CLIMB_VELOCITY;
-                animation_event.send(AnimationEvent::climbing(ent, ClimbingDirection::Down));
-            } else {
-                velocity.linvel.y = 0.;
-            }
-        }
-
-        // handle the jump buffer
-
-        // if we're on the ground and the jump buffer is running, that means
-        // the user pressed jump in the air recently
-        if on_ground && !jump_buffer_timer.0.is_stopped() {
-            jump_buffer_timer.0.pause();
-            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
-            *jumper = Jumper::mk_jumping();
-        }
-
-        // handle jumping
-
-        // see if we just pressed jump
-        let just_pressed_jump = action.just_pressed(&PlatformerAction::Jump);
-
-        // if you pressed jump
-        if just_pressed_jump {
-            match jumper.deref_mut() {
-                // and you're _not_ currently jumping
-                Jumper::NotJumping => {
-                    // and your on the ground, climbing, or we're within range
-                    // of the coyote timer, then jump
-                    if on_ground || climber.climbing || !coyote_timer.0.is_stopped() {
-                        // disable the coyote timer (may be noop)
-                        coyote_timer.0.pause();
-
-                        // set the y vel
-                        velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
-
-                        // set game state
-                        *jumper = Jumper::mk_jumping();
-                        climber.climbing = false;
-                        animation_event.send(AnimationEvent::jumping(ent));
-                    }
-                }
-                // and you _are_ not currently jumping
-                Jumper::Jumping(ref mut jumping) => {
-                    if !climber.climbing {
-                        // see if you have any jumps left, and if so decrement
-                        // your remaining jumps
-                        if jumping.jumps_left > 0 {
-                            velocity.linvel.y = base_y_vel + JUMP_VELOCITY;
-                            jumping.jumps_left -= 1;
-                        } else {
-                            // trigger the jump buffer
-                            jump_buffer_timer.0.restart();
-                        }
-                    }
-                }
-            }
-        }
-
-        // If you didn't just just press jump, you y vel is stable, and you're
-        // on the ground, then reset jump state
-        if !just_pressed_jump && velocity.linvel.y == base_y_vel && on_ground {
-            *jumper = Jumper::mk_not_jumping();
-        }
-
-        // set movement state
-        if !pressed_left
-            && !pressed_left
-            && !just_pressed_jump
-            && !climber.climbing
-            && !jumper.is_jumping()
-            && velocity.linvel.x == base_x_vel
-            && velocity.linvel.y == base_y_vel
-        {
-            animation_event.send(AnimationEvent::idling(ent));
         }
     }
 }
@@ -313,6 +136,7 @@ fn setup_player(mut commands: Commands, mut query: Query<Entity, Added<Player>>)
         ent_cmds.insert(TnuaRapier2dIOBundle::default());
         ent_cmds.insert(TnuaController::default());
         ent_cmds.insert(TnuaRapier2dSensorShape(Collider::cuboid(5.75, 4.)));
+        ent_cmds.insert(TnuaAnimatingState::<AnimationState>::default());
     }
 }
 
@@ -333,54 +157,112 @@ fn handle_game_actions(
 
 // SPRITE ANIMATION
 
+#[allow(clippy::unnecessary_cast)]
+pub fn animate(
+    mut animations_handlers_query: Query<(
+        Entity,
+        &mut TnuaAnimatingState<AnimationState>,
+        &TnuaController,
+    )>,
+    mut animation_event: EventWriter<AnimationEvent>,
+) {
+    for (ent, mut animating_state, controller) in animations_handlers_query.iter_mut() {
+        let current_status_for_animating = match controller.action_name() {
+            Some(TnuaBuiltinJump::NAME) => {
+                let (_, jump_state) = controller
+                    .concrete_action::<TnuaBuiltinJump>()
+                    .expect("action name mismatch");
+
+                // Depending on the state of the jump, we need to decide if we want to play the jump
+                // animation or the fall animation.
+                match jump_state {
+                    TnuaBuiltinJumpState::NoJump => return,
+                    TnuaBuiltinJumpState::StartingJump { .. } => AnimationState::Jumping,
+                    TnuaBuiltinJumpState::SlowDownTooFastSlopeJump { .. } => {
+                        AnimationState::Jumping
+                    }
+                    TnuaBuiltinJumpState::MaintainingJump => AnimationState::Jumping,
+                    TnuaBuiltinJumpState::StoppedMaintainingJump => AnimationState::Jumping,
+                    TnuaBuiltinJumpState::FallSection => AnimationState::Falling,
+                }
+            }
+            Some(other) => panic!("Unknown action {other}"),
+            None => {
+                let Some((_, basis_state)) = controller.concrete_basis::<TnuaBuiltinWalk>() else {
+                    return;
+                };
+
+                if basis_state.standing_on_entity().is_none() {
+                    AnimationState::Falling
+                } else {
+                    let running_dir = if basis_state.running_velocity.x > 0. {
+                        RunningDirection::Right
+                    } else {
+                        RunningDirection::Left
+                    };
+                    let speed = basis_state.running_velocity.length();
+                    if 0.01 < speed {
+                        AnimationState::Running(running_dir)
+                    } else {
+                        AnimationState::Standing
+                    }
+                }
+            }
+        };
+
+        let animating_directive =
+            animating_state.update_by_discriminant(current_status_for_animating);
+
+        // animation_event.send(AnimationEvent::running(ent, RunningDirection::Left));
+
+        match animating_directive {
+            TnuaAnimatingStateDirective::Maintain { state: _ } => {}
+            TnuaAnimatingStateDirective::Alter {
+                old_state: _,
+                state,
+            } => {
+                animation_event.send(AnimationEvent { ent, typ: *state });
+            }
+        };
+    }
+}
+
+// SPRITE ANIMATION Old
+
 #[derive(Event, PartialEq, Debug, Copy, Clone)]
 pub struct AnimationEvent {
     ent: Entity,
-    typ: AnimationEventType,
+    typ: AnimationState,
 }
-impl AnimationEvent {
-    fn idling(ent: Entity) -> Self {
-        AnimationEvent {
-            ent,
-            typ: AnimationEventType::Idling,
-        }
-    }
-    fn running(ent: Entity, dir: RunningDirection) -> Self {
-        AnimationEvent {
-            ent,
-            typ: AnimationEventType::Running(dir),
-        }
-    }
-    fn climbing(ent: Entity, dir: ClimbingDirection) -> Self {
-        AnimationEvent {
-            ent,
-            typ: AnimationEventType::Climbing(dir),
-        }
-    }
-    fn jumping(ent: Entity) -> Self {
-        AnimationEvent {
-            ent,
-            typ: AnimationEventType::Jumping,
+
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum AnimationState {
+    Standing,
+    Running(RunningDirection),
+    Jumping,
+    Falling,
+}
+impl AnimationState {
+    /// for the provided movement state, get the animation config
+    fn to_config(self: &Self) -> AnimationConfig {
+        match self {
+            AnimationState::Standing | AnimationState::Falling => {
+                AnimationConfig::new(0, vec![1, 2], 3, 3, TimerMode::Repeating, *self)
+            }
+            AnimationState::Jumping => {
+                AnimationConfig::new(2, vec![], 2, 1, TimerMode::Repeating, *self)
+            }
+            AnimationState::Running(_) => {
+                AnimationConfig::new(1, vec![2, 3], 4, 15, TimerMode::Repeating, *self)
+            }
         }
     }
 }
 
 #[derive(PartialEq, Debug, Copy, Clone)]
-pub enum AnimationEventType {
-    Idling,
-    Running(RunningDirection),
-    Climbing(ClimbingDirection),
-    Jumping,
-}
-#[derive(PartialEq, Debug, Copy, Clone)]
 pub enum RunningDirection {
     Right,
     Left,
-}
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub enum ClimbingDirection {
-    Up,
-    Down,
 }
 
 // animating config
@@ -392,7 +274,7 @@ struct AnimationConfig {
     fps: u8,
     frame_timer: Timer,
     frame_timer_mode: TimerMode,
-    for_event: AnimationEventType,
+    for_event: AnimationState,
 }
 impl AnimationConfig {
     fn new(
@@ -401,7 +283,7 @@ impl AnimationConfig {
         last: usize,
         fps: u8,
         timer_mode: TimerMode,
-        for_event: AnimationEventType,
+        for_event: AnimationState,
     ) -> Self {
         Self {
             first_sprite_index: first,
@@ -426,30 +308,15 @@ fn recieve_animation_event(
     mut animation_config_query: Query<&mut AnimationConfig, With<Player>>,
 ) {
     for animation_event in animation_events.read() {
-        let next_animation = get_anmation_for_movement_event(&animation_event.typ);
+        let animation_config = animation_event.typ.to_config();
         if let Ok(mut animation) = animation_config_query.get_mut(animation_event.ent) {
-            if animation.for_event != next_animation.for_event {
-                *animation = next_animation;
+            if animation.for_event != animation_config.for_event {
+                *animation = animation_config;
             }
         } else {
             if let Some(mut ent_cmds) = commands.get_entity(animation_event.ent) {
-                ent_cmds.insert(next_animation);
+                ent_cmds.insert(animation_config);
             }
-        }
-    }
-}
-
-/// for the provided movement state, get the animation config
-fn get_anmation_for_movement_event(event_type: &AnimationEventType) -> AnimationConfig {
-    match event_type {
-        AnimationEventType::Idling | AnimationEventType::Climbing(_) => {
-            AnimationConfig::new(0, vec![1, 2], 3, 3, TimerMode::Repeating, *event_type)
-        }
-        AnimationEventType::Jumping => {
-            AnimationConfig::new(2, vec![], 2, 10, TimerMode::Repeating, *event_type)
-        }
-        AnimationEventType::Running(_) => {
-            AnimationConfig::new(1, vec![2, 3], 4, 15, TimerMode::Repeating, *event_type)
         }
     }
 }
@@ -486,8 +353,8 @@ fn set_sprite_direction(
 
     let (mut sprite, animation) = query.single_mut();
     match animation.for_event {
-        AnimationEventType::Running(RunningDirection::Right) => sprite.flip_x = false,
-        AnimationEventType::Running(RunningDirection::Left) => sprite.flip_x = true,
+        AnimationState::Running(RunningDirection::Right) => sprite.flip_x = false,
+        AnimationState::Running(RunningDirection::Left) => sprite.flip_x = true,
         _ => (),
     }
 }
@@ -528,18 +395,11 @@ impl Plugin for PlayerPlugin {
                 (
                     setup_player,
                     handle_game_actions,
-                    player_movement2,
-                    // player_movement,
-                    tick_jump_buffer,
-                ),
-            )
-            .add_systems(
-                Update,
-                // sprite systems
-                (
+                    player_movement,
+                    animate,
                     recieve_animation_event,
-                    set_sprite_direction.after(recieve_animation_event),
                     animate_sprite,
+                    set_sprite_direction,
                 ),
             );
     }
