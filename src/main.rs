@@ -1,4 +1,4 @@
-use std::{env, path::Path};
+use std::path::Path;
 
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
@@ -11,13 +11,9 @@ use leafwing_input_manager::prelude::*;
 
 mod actions;
 mod camera;
-mod climbing;
 mod colliders;
 mod enemy;
 mod game_flow;
-mod ground_detection;
-mod inventory;
-mod jumping;
 mod misc_objects;
 mod obstacle;
 mod platform;
@@ -73,15 +69,12 @@ fn main() {
         .add_event::<game_flow::RespawnLevelEvent>()
         .add_plugins(game_flow::GameFlowPlugin)
         .add_plugins(player::PlayerPlugin)
-        .add_plugins(ground_detection::GroundDetectionPlugin)
         .add_plugins(walls::WallsPlugin)
-        .add_plugins(climbing::ClimbingPlugin)
         .add_plugins(enemy::EnemyPlugin)
         .add_plugins(obstacle::ObstaclePlugin)
         .add_plugins(platform::PlatformPlugin)
         .add_plugins(spike::SpikePlugin)
         .add_plugins(misc_objects::MiscObjectsPlugin)
-        .add_systems(Update, inventory::dbg_print_inventory)
         .add_systems(Update, camera::camera_fit_inside_current_level)
         .run();
 }

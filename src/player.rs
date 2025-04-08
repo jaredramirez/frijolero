@@ -1,12 +1,11 @@
-use std::{ops::DerefMut, time::Duration};
+use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
-use bevy_rapier2d::dynamics::Velocity;
 use bevy_rapier2d::math::Vect;
 use bevy_rapier2d::prelude::{CoefficientCombineRule, Collider, Friction, RigidBody};
 use bevy_tnua::builtins::TnuaBuiltinJumpState;
-use bevy_tnua::math::{AsF32, Vector3};
+use bevy_tnua::math::Vector3;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
 use bevy_tnua::{TnuaAction, TnuaAnimatingState, TnuaAnimatingStateDirective};
 use bevy_tnua_rapier2d::TnuaRapier2dIOBundle;
@@ -16,16 +15,7 @@ use leafwing_input_manager::prelude::*;
 use crate::colliders::ROTATION_CONSTRAINTS;
 use crate::game_flow::{RespawnLevelEvent, RespawnWorldEvent};
 use crate::spike::SpikeDetection;
-use crate::timer_helpers::TimerHelper;
-use crate::{
-    actions::PlatformerAction,
-    climbing::Climber,
-    colliders::ColliderBundle,
-    ground_detection::{CoyoteTimer, GroundDetection},
-    inventory::Inventory,
-    jumping::Jumper,
-    platform::Platform,
-};
+use crate::{actions::PlatformerAction, colliders::ColliderBundle};
 
 /// tag for players
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
@@ -35,6 +25,7 @@ pub struct Player;
 #[derive(Default, Bundle, LdtkEntity)]
 pub struct PlayerBundle {
     pub player: Player,
+    pub movement_direction: MovementDirection,
 
     pub spike_detection: SpikeDetection,
 
@@ -49,28 +40,46 @@ pub struct PlayerBundle {
     entity_instance: EntityInstance,
 }
 
+#[derive(Component, PartialEq, Debug, Copy, Clone, Default)]
+pub enum MovementDirection {
+    #[default]
+    None,
+    Right,
+    Left,
+}
+
 // MOVEMENT
 
 // movement constants
 
 pub fn player_movement(
     mut player_query: Query<
-        (Entity, &ActionState<PlatformerAction>, &mut TnuaController),
+        (
+            &ActionState<PlatformerAction>,
+            &mut TnuaController,
+            &mut MovementDirection,
+        ),
         With<Player>,
     >,
 ) {
-    for (ent, action, mut tnua_controller) in &mut player_query {
+    for (action, mut tnua_controller, mut movement_dir) in &mut player_query {
         let mut direction = Vector3::ZERO;
 
         // see if the player just pressed right/left
         let pressed_left = action.pressed(&PlatformerAction::Left);
         if pressed_left {
             direction -= Vector3::X;
+            *movement_dir = MovementDirection::Left;
         }
 
         let pressed_right = action.pressed(&PlatformerAction::Right);
         if pressed_right {
             direction += Vector3::X;
+            *movement_dir = MovementDirection::Right;
+        }
+
+        if !pressed_left && !pressed_right {
+            *movement_dir = MovementDirection::None;
         }
 
         direction = direction.clamp_length_max(1.0);
@@ -195,14 +204,9 @@ pub fn animate(
                 if basis_state.standing_on_entity().is_none() {
                     AnimationState::Falling
                 } else {
-                    let running_dir = if basis_state.running_velocity.x > 0. {
-                        RunningDirection::Right
-                    } else {
-                        RunningDirection::Left
-                    };
                     let speed = basis_state.running_velocity.length();
                     if 0.01 < speed {
-                        AnimationState::Running(running_dir)
+                        AnimationState::Running
                     } else {
                         AnimationState::Standing
                     }
@@ -212,8 +216,6 @@ pub fn animate(
 
         let animating_directive =
             animating_state.update_by_discriminant(current_status_for_animating);
-
-        // animation_event.send(AnimationEvent::running(ent, RunningDirection::Left));
 
         match animating_directive {
             TnuaAnimatingStateDirective::Maintain { state: _ } => {}
@@ -238,7 +240,7 @@ pub struct AnimationEvent {
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum AnimationState {
     Standing,
-    Running(RunningDirection),
+    Running,
     Jumping,
     Falling,
 }
@@ -252,17 +254,11 @@ impl AnimationState {
             AnimationState::Jumping => {
                 AnimationConfig::new(2, vec![], 2, 1, TimerMode::Repeating, *self)
             }
-            AnimationState::Running(_) => {
+            AnimationState::Running => {
                 AnimationConfig::new(1, vec![2, 3], 4, 15, TimerMode::Repeating, *self)
             }
         }
     }
-}
-
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub enum RunningDirection {
-    Right,
-    Left,
 }
 
 // animating config
@@ -345,38 +341,17 @@ fn animate_sprite(time: Res<Time>, mut query: Query<(&mut AnimationConfig, &mut 
 
 /// flip the sprite animation based on the players movement direction
 fn set_sprite_direction(
-    mut query: Query<(&mut Sprite, &AnimationConfig), (With<Player>, Changed<AnimationConfig>)>,
+    mut query: Query<(&mut Sprite, &MovementDirection), (With<Player>, Changed<MovementDirection>)>,
 ) {
     if query.is_empty() {
         return;
     }
 
-    let (mut sprite, animation) = query.single_mut();
-    match animation.for_event {
-        AnimationState::Running(RunningDirection::Right) => sprite.flip_x = false,
-        AnimationState::Running(RunningDirection::Left) => sprite.flip_x = true,
-        _ => (),
-    }
-}
-
-// JUMP BUFFR TIMER
-
-/// store the jump buffer
-#[derive(Component, Clone)]
-pub struct JumpBufferTimer(Timer);
-
-impl Default for JumpBufferTimer {
-    fn default() -> Self {
-        let mut jump_buffer_timer = Timer::new(Duration::from_secs_f32(0.1), TimerMode::Once);
-        jump_buffer_timer.pause();
-        Self(jump_buffer_timer)
-    }
-}
-
-/// tick the jump buffer
-fn tick_jump_buffer(time: Res<Time>, mut query: Query<&mut JumpBufferTimer>) {
-    for mut jump_buffer in query.iter_mut() {
-        jump_buffer.0.tick(time.delta());
+    let (mut sprite, movement_dir) = query.single_mut();
+    match movement_dir {
+        MovementDirection::Right => sprite.flip_x = false,
+        MovementDirection::Left => sprite.flip_x = true,
+        MovementDirection::None => (),
     }
 }
 
