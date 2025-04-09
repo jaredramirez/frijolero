@@ -26,8 +26,8 @@ pub struct Player;
 pub struct PlayerBundle {
     pub player: Player,
     pub movement_direction: MovementDirection,
-
     pub spike_detection: SpikeDetection,
+    pub air_jumps_left: AirJumpsLeft,
 
     #[sprite_sheet("player.png", 16, 16, 7, 1, 0, 0, 0)]
     pub sprite: Sprite,
@@ -40,12 +40,24 @@ pub struct PlayerBundle {
     entity_instance: EntityInstance,
 }
 
+/// track the direction the player is facing
 #[derive(Component, PartialEq, Debug, Copy, Clone, Default)]
 pub enum MovementDirection {
     #[default]
     None,
     Right,
     Left,
+}
+
+/// track the direction the player is facing
+#[derive(Component, PartialEq, Debug, Copy, Clone)]
+pub struct AirJumpsLeft {
+    num: u8,
+}
+impl Default for AirJumpsLeft {
+    fn default() -> Self {
+        AirJumpsLeft { num: 2 }
+    }
 }
 
 // MOVEMENT
@@ -58,11 +70,12 @@ pub fn player_movement(
             &ActionState<PlatformerAction>,
             &mut TnuaController,
             &mut MovementDirection,
+            &mut AirJumpsLeft,
         ),
         With<Player>,
     >,
 ) {
-    for (action, mut tnua_controller, mut movement_dir) in &mut player_query {
+    for (action, mut tnua_controller, mut movement_dir, mut air_jumps_left) in &mut player_query {
         let mut direction = Vector3::ZERO;
 
         // see if the player just pressed right/left
@@ -92,15 +105,23 @@ pub fn player_movement(
             ..Default::default()
         });
 
+        let just_pressed_jump = action.just_pressed(&PlatformerAction::Jump);
+        dbg!(air_jumps_left.num);
+        if just_pressed_jump && air_jumps_left.num > 0 {
+            air_jumps_left.num -= 1;
+        }
+
         let pressed_jump = action.pressed(&PlatformerAction::Jump);
         if pressed_jump {
             tnua_controller.action(TnuaBuiltinJump {
-                // The full height of the jump, if the player does not release the button:
                 height: 35.0,
-
-                // TnuaBuiltinJump too has other fields that can be configured:
+                allow_in_air: air_jumps_left.num > 0,
                 ..Default::default()
             });
+        }
+
+        if let Ok(false) = tnua_controller.is_airborne() {
+            *air_jumps_left = AirJumpsLeft::default();
         }
     }
 }
@@ -233,9 +254,7 @@ pub fn animate(
 
 /// animating info
 struct AnimationInfo {
-    first_sprite_index: usize,
-    skip_sprite_indexes: &'static [usize],
-    last_sprite_index: usize,
+    sprite_indexes: &'static [usize],
     fps: u8,
     frame_timer_mode: TimerMode,
 }
@@ -253,23 +272,17 @@ impl AnimationInfo {
 // ANIMATING INFO CONSTANTS
 
 const ANIMATION_INFO_STANDING: AnimationInfo = AnimationInfo {
-    first_sprite_index: 0,
-    skip_sprite_indexes: &[1, 2],
-    last_sprite_index: 3,
+    sprite_indexes: &[0, 3],
     fps: 2,
     frame_timer_mode: TimerMode::Repeating,
 };
 const ANIMATION_INFO_JUMPING: AnimationInfo = AnimationInfo {
-    first_sprite_index: 2,
-    skip_sprite_indexes: &[],
-    last_sprite_index: 2,
+    sprite_indexes: &[2],
     fps: 10,
     frame_timer_mode: TimerMode::Repeating,
 };
 const ANIMATION_INFO_RUNNING: AnimationInfo = AnimationInfo {
-    first_sprite_index: 1,
-    skip_sprite_indexes: &[2, 3],
-    last_sprite_index: 4,
+    sprite_indexes: &[1, 4],
     fps: 15,
     frame_timer_mode: TimerMode::Repeating,
 };
@@ -338,17 +351,18 @@ fn animate_sprite(time: Res<Time>, mut query: Query<(&mut AnimationConfig, &mut 
         animation.frame_timer.tick(time.delta());
         if animation.frame_timer.just_finished() {
             if let Some(atlas) = &mut sprite.texture_atlas {
-                let mut next_index = atlas.index + 1;
-                while info.skip_sprite_indexes.contains(&next_index) {
-                    next_index = next_index + 1;
-                }
-                if next_index > info.last_sprite_index {
-                    atlas.index = info.first_sprite_index
+                let opt_index_of_atlas = info.sprite_indexes.iter().position(|v| v == &atlas.index);
+                if let Some(index_of_atlas) = opt_index_of_atlas {
+                    if let Some(next_index) = info.sprite_indexes.get(index_of_atlas + 1) {
+                        atlas.index = *next_index;
+                    } else if let Some(first_index) = info.sprite_indexes.get(0) {
+                        atlas.index = *first_index;
+                    }
                 } else {
-                    atlas.index = next_index;
-                    animation.frame_timer =
-                        AnimationConfig::timer_from_fps(info.fps, info.frame_timer_mode);
-                };
+                    if let Some(first_index) = info.sprite_indexes.get(0) {
+                        atlas.index = *first_index;
+                    }
+                }
             }
         }
     }
