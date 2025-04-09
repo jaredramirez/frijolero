@@ -223,78 +223,91 @@ pub fn animate(
                 old_state: _,
                 state,
             } => {
-                animation_event.send(AnimationEvent { ent, typ: *state });
+                animation_event.send(AnimationEvent { ent, state: *state });
             }
         };
     }
 }
 
-// SPRITE ANIMATION Old
+// SPRITE ANIMATION
 
-#[derive(Event, PartialEq, Debug, Copy, Clone)]
-pub struct AnimationEvent {
-    ent: Entity,
-    typ: AnimationState,
+/// animating info
+struct AnimationInfo {
+    first_sprite_index: usize,
+    skip_sprite_indexes: &'static [usize],
+    last_sprite_index: usize,
+    fps: u8,
+    frame_timer_mode: TimerMode,
 }
-
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub enum AnimationState {
-    Standing,
-    Running,
-    Jumping,
-    Falling,
-}
-impl AnimationState {
-    /// for the provided movement state, get the animation config
-    fn to_config(self: &Self) -> AnimationConfig {
-        match self {
-            AnimationState::Standing | AnimationState::Falling => {
-                AnimationConfig::new(0, vec![1, 2], 3, 3, TimerMode::Repeating, *self)
-            }
-            AnimationState::Jumping => {
-                AnimationConfig::new(2, vec![], 2, 1, TimerMode::Repeating, *self)
-            }
-            AnimationState::Running => {
-                AnimationConfig::new(1, vec![2, 3], 4, 15, TimerMode::Repeating, *self)
-            }
+impl AnimationInfo {
+    fn from_state(state: &AnimationState) -> Self {
+        match state {
+            &AnimationState::Standing => ANIMATION_INFO_STANDING,
+            &AnimationState::Jumping => ANIMATION_INFO_JUMPING,
+            &AnimationState::Falling => ANIMATION_INFO_JUMPING,
+            &AnimationState::Running => ANIMATION_INFO_RUNNING,
         }
     }
 }
 
-// animating config
-#[derive(Component, PartialEq, Debug)]
+// ANIMATING INFO CONSTANTS
+
+const ANIMATION_INFO_STANDING: AnimationInfo = AnimationInfo {
+    first_sprite_index: 0,
+    skip_sprite_indexes: &[1, 2],
+    last_sprite_index: 3,
+    fps: 2,
+    frame_timer_mode: TimerMode::Repeating,
+};
+const ANIMATION_INFO_JUMPING: AnimationInfo = AnimationInfo {
+    first_sprite_index: 2,
+    skip_sprite_indexes: &[],
+    last_sprite_index: 2,
+    fps: 10,
+    frame_timer_mode: TimerMode::Repeating,
+};
+const ANIMATION_INFO_RUNNING: AnimationInfo = AnimationInfo {
+    first_sprite_index: 1,
+    skip_sprite_indexes: &[2, 3],
+    last_sprite_index: 4,
+    fps: 15,
+    frame_timer_mode: TimerMode::Repeating,
+};
+
+// ANIMATION CONFIG
+
+#[derive(Component)]
 struct AnimationConfig {
-    first_sprite_index: usize,
-    skip_sprite_indexes: Vec<usize>,
-    last_sprite_index: usize,
-    fps: u8,
+    state: AnimationState,
     frame_timer: Timer,
-    frame_timer_mode: TimerMode,
-    for_event: AnimationState,
 }
 impl AnimationConfig {
-    fn new(
-        first: usize,
-        skip: Vec<usize>,
-        last: usize,
-        fps: u8,
-        timer_mode: TimerMode,
-        for_event: AnimationState,
-    ) -> Self {
-        Self {
-            first_sprite_index: first,
-            skip_sprite_indexes: skip,
-            last_sprite_index: last,
-            fps,
-            frame_timer: Self::timer_from_fps(fps, timer_mode),
-            frame_timer_mode: timer_mode,
-            for_event,
+    fn mk(info: &AnimationInfo, state: AnimationState) -> AnimationConfig {
+        AnimationConfig {
+            state,
+            frame_timer: Self::timer_from_fps(info.fps, info.frame_timer_mode),
         }
     }
 
     fn timer_from_fps(fps: u8, timer_mode: TimerMode) -> Timer {
         Timer::new(Duration::from_secs_f32(1.0 / (fps as f32)), timer_mode)
     }
+}
+
+// SPRITE ANIMATION
+
+#[derive(Event, PartialEq, Debug, Copy, Clone)]
+pub struct AnimationEvent {
+    ent: Entity,
+    state: AnimationState,
+}
+
+#[derive(PartialEq, Debug, Copy, Clone, Eq, Hash)]
+pub enum AnimationState {
+    Standing,
+    Running,
+    Jumping,
+    Falling,
 }
 
 /// set the sprite animation for player
@@ -304,15 +317,15 @@ fn recieve_animation_event(
     mut animation_config_query: Query<&mut AnimationConfig, With<Player>>,
 ) {
     for animation_event in animation_events.read() {
-        let animation_config = animation_event.typ.to_config();
-        if let Ok(mut animation) = animation_config_query.get_mut(animation_event.ent) {
-            if animation.for_event != animation_config.for_event {
-                *animation = animation_config;
+        let new_info = AnimationInfo::from_state(&animation_event.state);
+        let new_config = AnimationConfig::mk(&new_info, animation_event.state);
+
+        if let Ok(mut existing) = animation_config_query.get_mut(animation_event.ent) {
+            if existing.state != animation_event.state {
+                *existing = new_config;
             }
         } else {
-            if let Some(mut ent_cmds) = commands.get_entity(animation_event.ent) {
-                ent_cmds.insert(animation_config);
-            }
+            commands.entity(animation_event.ent).insert(new_config);
         }
     }
 }
@@ -320,19 +333,21 @@ fn recieve_animation_event(
 /// animate the sprite with the current animation config
 fn animate_sprite(time: Res<Time>, mut query: Query<(&mut AnimationConfig, &mut Sprite)>) {
     for (mut animation, mut sprite) in &mut query {
+        let info = AnimationInfo::from_state(&animation.state);
+
         animation.frame_timer.tick(time.delta());
         if animation.frame_timer.just_finished() {
             if let Some(atlas) = &mut sprite.texture_atlas {
                 let mut next_index = atlas.index + 1;
-                while animation.skip_sprite_indexes.contains(&next_index) {
+                while info.skip_sprite_indexes.contains(&next_index) {
                     next_index = next_index + 1;
                 }
-                if next_index > animation.last_sprite_index {
-                    atlas.index = animation.first_sprite_index
+                if next_index > info.last_sprite_index {
+                    atlas.index = info.first_sprite_index
                 } else {
                     atlas.index = next_index;
                     animation.frame_timer =
-                        AnimationConfig::timer_from_fps(animation.fps, animation.frame_timer_mode);
+                        AnimationConfig::timer_from_fps(info.fps, info.frame_timer_mode);
                 };
             }
         }
@@ -366,7 +381,6 @@ impl Plugin for PlayerPlugin {
             .register_ldtk_entity::<PlayerBundle>("Player")
             .add_systems(
                 Update,
-                // player movement systems
                 (
                     setup_player,
                     handle_game_actions,
